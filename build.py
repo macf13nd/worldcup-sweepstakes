@@ -15,6 +15,7 @@ import os
 import statistics
 import unicodedata
 from datetime import datetime, timezone
+from fractions import Fraction
 from pathlib import Path
 
 import requests
@@ -36,6 +37,22 @@ def canon(name: str) -> str:
     nfkd = unicodedata.normalize("NFKD", name)
     no_accents = "".join(c for c in nfkd if not unicodedata.combining(c))
     return "".join(c for c in no_accents.lower() if c.isalnum())
+
+
+def to_fractional(decimal):
+    """Decimal odds -> UK/European fractional string, e.g. 5.0 -> '4/1', 3.5 -> '5/2'."""
+    if not decimal or decimal <= 1:
+        return None
+    net = decimal - 1
+    if net >= 10:  # long shots: clean whole-number fractions
+        return f"{round(net)}/1"
+    fr = Fraction(net).limit_denominator(20)
+    return f"{fr.numerator}/{fr.denominator}"
+
+
+def flag_url(team, flags):
+    code = flags.get(team)
+    return f"https://flagcdn.com/h20/{code}.png" if code else None
 
 
 def load_env():
@@ -161,6 +178,8 @@ def build():
     draw = json.loads((ROOT / "draw.json").read_text())
     aliases = json.loads((ROOT / "aliases.json").read_text())
     aliases = {k: v for k, v in aliases.items() if not k.startswith("_")}
+    flags = json.loads((ROOT / "flags.json").read_text())
+    flags = {k: v for k, v in flags.items() if not k.startswith("_")}
     overrides_path = ROOT / "overrides.json"
     overrides = json.loads(overrides_path.read_text()) if overrides_path.exists() else {}
 
@@ -187,10 +206,12 @@ def build():
 
             teams.append({
                 "name": team,
+                "flag": flag_url(team, flags),
                 "status": status,
                 "result": res["text"] if res else "—",
                 "outcome": res["outcome"] if res else "",
                 "odds_decimal": od["decimal"] if od else None,
+                "odds_frac": to_fractional(od["decimal"]) if od else None,
                 "odds_implied": od["implied"] if od else None,
                 "matched": bool(res or od),
             })

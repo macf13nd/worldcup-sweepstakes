@@ -1,0 +1,15 @@
+{
+  "_comment": "Sweepstakes team name -> flagcdn country code (https://flagcdn.com). gb-eng/gb-sct render the England/Scotland flags.",
+  "Senegal": "sn", "Congo DR": "cd", "Egypt": "eg", "Curaçao": "cw",
+  "Norway": "no", "Scotland": "gb-sct", "Qatar": "qa", "Netherlands": "nl",
+  "Czechia": "cz", "Jordan": "jo", "Ghana": "gh", "Uzbekistan": "uz",
+  "Austria": "at", "Argentina": "ar", "Panama": "pa", "Germany": "de",
+  "Canada": "ca", "Tunisia": "tn", "Brazil": "br", "Türkiye": "tr",
+  "Bosnia and Herzegovina": "ba", "Algeria": "dz", "Mexico": "mx", "Croatia": "hr",
+  "United States": "us", "Belgium": "be", "Iraq": "iq", "Portugal": "pt",
+  "Côte d'Ivoire": "ci", "Australia": "au", "Paraguay": "py", "Saudi Arabia": "sa",
+  "Morocco": "ma", "Uruguay": "uy", "Ecuador": "ec", "Haiti": "ht",
+  "Sweden": "se", "South Korea": "kr", "France": "fr", "Colombia": "co",
+  "Switzerland": "ch", "Spain": "es", "Cabo Verde": "cv", "South Africa": "za",
+  "Iran": "ir", "Japan": "jp", "England": "gb-eng", "New Zealand": "nz"
+}

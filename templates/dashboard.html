@@ -35,16 +35,23 @@
 
   .person { background: var(--card); border: 1px solid var(--line);
             border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
-  .person-head { display: flex; justify-content: space-between; align-items: baseline;
-                 padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  .person-head .name { font-weight: 600; }
-  .person-head .tally { font-size: 13px; color: var(--muted); }
-  .person-head .tally b { color: var(--in); }
+  .person-head { display: flex; justify-content: space-between; align-items: center;
+                 padding: 11px 14px 11px 16px; background: #11171d;
+                 border-bottom: 1px solid var(--line); border-left: 3px solid var(--accent); }
+  .person-head .name { font-weight: 700; font-size: 16px; letter-spacing: .01em;
+                       color: #fff; }
+  .person-head .tally { font-size: 12px; color: var(--muted);
+                        text-transform: uppercase; letter-spacing: .04em; }
+  .person-head .tally b { color: var(--in); font-size: 14px; }
   table { width: 100%; border-collapse: collapse; }
   td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tr:last-child td { border-bottom: 0; }
-  .team { font-weight: 500; }
-  .team.dead { color: var(--muted); text-decoration: line-through; }
+  .team { font-weight: 400; font-size: 14px; display: inline-flex; align-items: center; gap: 9px; }
+  .flag { width: 22px; height: 16px; border-radius: 2px; object-fit: cover;
+          box-shadow: 0 0 0 1px rgba(255,255,255,.12); flex: none; }
+  .team.dead { color: var(--muted); }
+  .team.dead .flag { filter: grayscale(1) opacity(.55); }
+  .team.dead .tname { text-decoration: line-through; }
   td.res { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
   .res .W { color: var(--in); } .res .L { color: var(--out); } .res .D { color: var(--accent); }
   td.odds { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -94,13 +101,13 @@
     <table>
       {% for t in p.teams %}
       <tr>
-        <td><span class="team {% if t.status == 'out' %}dead{% endif %}">{{ t.name }}</span></td>
+        <td><span class="team {% if t.status == 'out' %}dead{% endif %}">{% if t.flag %}<img class="flag" src="{{ t.flag }}" alt="" loading="lazy">{% endif %}<span class="tname">{{ t.name }}</span></span></td>
         <td><span class="pill {{ t.status }}">{{ t.status }}</span></td>
         <td class="res">
           {% if t.outcome %}<span class="{{ t.outcome }}">{{ t.result }}</span>{% else %}{{ t.result }}{% endif %}
         </td>
         <td class="odds">
-          {% if t.odds_decimal %}{{ "%.1f"|format(t.odds_decimal) }}<span class="imp"> · {{ t.odds_implied }}%</span>{% else %}—{% endif %}
+          {% if t.odds_frac %}{{ t.odds_frac }}<span class="imp"> · {{ t.odds_implied }}%</span>{% else %}—{% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -109,7 +116,7 @@
   {% endfor %}
 
   <div class="foot">
-    Results: football-data.org · Odds: the-odds-api.com (median across books, decimal · implied win %)<br>
+    Results: football-data.org · Odds: the-odds-api.com (median across books, fractional · implied win %) · Flags: flagcdn.com<br>
     A team drops to OUT when bookmakers remove it from the outright winner market.
   </div>
 </div>

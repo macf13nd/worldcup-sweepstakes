@@ -35,16 +35,23 @@
 
   .person { background: var(--card); border: 1px solid var(--line);
             border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
-  .person-head { display: flex; justify-content: space-between; align-items: baseline;
-                 padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  .person-head .name { font-weight: 600; }
-  .person-head .tally { font-size: 13px; color: var(--muted); }
-  .person-head .tally b { color: var(--in); }
+  .person-head { display: flex; justify-content: space-between; align-items: center;
+                 padding: 11px 14px 11px 16px; background: #11171d;
+                 border-bottom: 1px solid var(--line); border-left: 3px solid var(--accent); }
+  .person-head .name { font-weight: 700; font-size: 16px; letter-spacing: .01em;
+                       color: #fff; }
+  .person-head .tally { font-size: 12px; color: var(--muted);
+                        text-transform: uppercase; letter-spacing: .04em; }
+  .person-head .tally b { color: var(--in); font-size: 14px; }
   table { width: 100%; border-collapse: collapse; }
   td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tr:last-child td { border-bottom: 0; }
-  .team { font-weight: 500; }
-  .team.dead { color: var(--muted); text-decoration: line-through; }
+  .team { font-weight: 400; font-size: 14px; display: inline-flex; align-items: center; gap: 9px; }
+  .flag { width: 22px; height: 16px; border-radius: 2px; object-fit: cover;
+          box-shadow: 0 0 0 1px rgba(255,255,255,.12); flex: none; }
+  .team.dead { color: var(--muted); }
+  .team.dead .flag { filter: grayscale(1) opacity(.55); }
+  .team.dead .tname { text-decoration: line-through; }
   td.res { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
   .res .W { color: var(--in); } .res .L { color: var(--out); } .res .D { color: var(--accent); }
   td.odds { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -61,7 +68,7 @@
 <body>
 <div class="wrap">
   <h1>⚽ World Cup 2026 Sweepstakes</h1>
-  <div class="sub">Updated 2026-06-25 14:17 UTC · refreshes daily</div>
+  <div class="sub">Updated 2026-06-25 14:25 UTC · refreshes daily</div>
 
   
 
@@ -151,29 +158,29 @@
     <table>
       
       <tr>
-        <td><span class="team ">Norway</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/no.png" alt="" loading="lazy"><span class="tname">Norway</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 3-2 vs Senegal</span>
         </td>
         <td class="odds">
-          34.0<span class="imp"> · 2.9%</span>
+          33/1<span class="imp"> · 2.9%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Scotland</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/gb-sct.png" alt="" loading="lazy"><span class="tname">Scotland</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-3 vs Brazil</span>
         </td>
         <td class="odds">
-          501.0<span class="imp"> · 0.2%</span>
+          500/1<span class="imp"> · 0.2%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team dead">Qatar</span></td>
+        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/qa.png" alt="" loading="lazy"><span class="tname">Qatar</span></span></td>
         <td><span class="pill out">out</span></td>
         <td class="res">
           <span class="L">L 1-3 vs Bosnia-Herzegovina</span>
@@ -184,13 +191,13 @@
       </tr>
       
       <tr>
-        <td><span class="team ">Netherlands</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/nl.png" alt="" loading="lazy"><span class="tname">Netherlands</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 5-1 vs Sweden</span>
         </td>
         <td class="odds">
-          15.0<span class="imp"> · 6.7%</span>
+          14/1<span class="imp"> · 6.7%</span>
         </td>
       </tr>
       
@@ -205,18 +212,18 @@
     <table>
       
       <tr>
-        <td><span class="team ">Canada</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ca.png" alt="" loading="lazy"><span class="tname">Canada</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 1-2 vs Switzerland</span>
         </td>
         <td class="odds">
-          151.0<span class="imp"> · 0.7%</span>
+          150/1<span class="imp"> · 0.7%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team dead">Tunisia</span></td>
+        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/tn.png" alt="" loading="lazy"><span class="tname">Tunisia</span></span></td>
         <td><span class="pill out">out</span></td>
         <td class="res">
           <span class="L">L 0-4 vs Japan</span>
@@ -227,18 +234,18 @@
       </tr>
       
       <tr>
-        <td><span class="team ">Brazil</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/br.png" alt="" loading="lazy"><span class="tname">Brazil</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 3-0 vs Scotland</span>
         </td>
         <td class="odds">
-          13.5<span class="imp"> · 7.4%</span>
+          12/1<span class="imp"> · 7.4%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team dead">Türkiye</span></td>
+        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/tr.png" alt="" loading="lazy"><span class="tname">Türkiye</span></span></td>
         <td><span class="pill out">out</span></td>
         <td class="res">
           <span class="L">L 0-1 vs Paraguay</span>
@@ -259,46 +266,46 @@
     <table>
       
       <tr>
-        <td><span class="team ">United States</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/us.png" alt="" loading="lazy"><span class="tname">United States</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 2-0 vs Australia</span>
         </td>
         <td class="odds">
-          32.0<span class="imp"> · 3.1%</span>
+          31/1<span class="imp"> · 3.1%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Belgium</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/be.png" alt="" loading="lazy"><span class="tname">Belgium</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 0-0 vs Iran</span>
         </td>
         <td class="odds">
-          51.0<span class="imp"> · 2.0%</span>
+          50/1<span class="imp"> · 2.0%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Iraq</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/iq.png" alt="" loading="lazy"><span class="tname">Iraq</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-3 vs France</span>
         </td>
         <td class="odds">
-          2501.0<span class="imp"> · 0.0%</span>
+          2500/1<span class="imp"> · 0.0%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Portugal</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/pt.png" alt="" loading="lazy"><span class="tname">Portugal</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 5-0 vs Uzbekistan</span>
         </td>
         <td class="odds">
-          11.0<span class="imp"> · 9.1%</span>
+          10/1<span class="imp"> · 9.1%</span>
         </td>
       </tr>
       
@@ -313,46 +320,46 @@
     <table>
       
       <tr>
-        <td><span class="team ">Switzerland</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ch.png" alt="" loading="lazy"><span class="tname">Switzerland</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 2-1 vs Canada</span>
         </td>
         <td class="odds">
-          71.0<span class="imp"> · 1.4%</span>
+          70/1<span class="imp"> · 1.4%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Spain</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/es.png" alt="" loading="lazy"><span class="tname">Spain</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 4-0 vs Saudi Arabia</span>
         </td>
         <td class="odds">
-          6.5<span class="imp"> · 15.4%</span>
+          11/2<span class="imp"> · 15.4%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Cabo Verde</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/cv.png" alt="" loading="lazy"><span class="tname">Cabo Verde</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 2-2 vs Uruguay</span>
         </td>
         <td class="odds">
-          1001.0<span class="imp"> · 0.1%</span>
+          1000/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">South Africa</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/za.png" alt="" loading="lazy"><span class="tname">South Africa</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 1-0 vs South Korea</span>
         </td>
         <td class="odds">
-          1000.0<span class="imp"> · 0.1%</span>
+          999/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
@@ -367,46 +374,46 @@
     <table>
       
       <tr>
-        <td><span class="team ">Bosnia and Herzegovina</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ba.png" alt="" loading="lazy"><span class="tname">Bosnia and Herzegovina</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 3-1 vs Qatar</span>
         </td>
         <td class="odds">
-          701.0<span class="imp"> · 0.1%</span>
+          700/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Algeria</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/dz.png" alt="" loading="lazy"><span class="tname">Algeria</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 2-1 vs Jordan</span>
         </td>
         <td class="odds">
-          501.0<span class="imp"> · 0.2%</span>
+          500/1<span class="imp"> · 0.2%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Mexico</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/mx.png" alt="" loading="lazy"><span class="tname">Mexico</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 3-0 vs Czechia</span>
         </td>
         <td class="odds">
-          56.0<span class="imp"> · 1.8%</span>
+          55/1<span class="imp"> · 1.8%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Croatia</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/hr.png" alt="" loading="lazy"><span class="tname">Croatia</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 1-0 vs Panama</span>
         </td>
         <td class="odds">
-          111.0<span class="imp"> · 0.9%</span>
+          110/1<span class="imp"> · 0.9%</span>
         </td>
       </tr>
       
@@ -421,46 +428,46 @@
     <table>
       
       <tr>
-        <td><span class="team ">Côte d&#39;Ivoire</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ci.png" alt="" loading="lazy"><span class="tname">Côte d&#39;Ivoire</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 1-2 vs Germany</span>
         </td>
         <td class="odds">
-          151.0<span class="imp"> · 0.7%</span>
+          150/1<span class="imp"> · 0.7%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Australia</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/au.png" alt="" loading="lazy"><span class="tname">Australia</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-2 vs United States</span>
         </td>
         <td class="odds">
-          251.0<span class="imp"> · 0.4%</span>
+          250/1<span class="imp"> · 0.4%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Paraguay</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/py.png" alt="" loading="lazy"><span class="tname">Paraguay</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 1-0 vs Turkey</span>
         </td>
         <td class="odds">
-          451.0<span class="imp"> · 0.2%</span>
+          450/1<span class="imp"> · 0.2%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Saudi Arabia</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/sa.png" alt="" loading="lazy"><span class="tname">Saudi Arabia</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-4 vs Spain</span>
         </td>
         <td class="odds">
-          1001.0<span class="imp"> · 0.1%</span>
+          1000/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
@@ -475,7 +482,7 @@
     <table>
       
       <tr>
-        <td><span class="team dead">Czechia</span></td>
+        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/cz.png" alt="" loading="lazy"><span class="tname">Czechia</span></span></td>
         <td><span class="pill out">out</span></td>
         <td class="res">
           <span class="L">L 0-3 vs Mexico</span>
@@ -486,7 +493,7 @@
       </tr>
       
       <tr>
-        <td><span class="team dead">Jordan</span></td>
+        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/jo.png" alt="" loading="lazy"><span class="tname">Jordan</span></span></td>
         <td><span class="pill out">out</span></td>
         <td class="res">
           <span class="L">L 1-2 vs Algeria</span>
@@ -497,24 +504,24 @@
       </tr>
       
       <tr>
-        <td><span class="team ">Ghana</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/gh.png" alt="" loading="lazy"><span class="tname">Ghana</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 0-0 vs England</span>
         </td>
         <td class="odds">
-          401.0<span class="imp"> · 0.2%</span>
+          400/1<span class="imp"> · 0.2%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Uzbekistan</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/uz.png" alt="" loading="lazy"><span class="tname">Uzbekistan</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-5 vs Portugal</span>
         </td>
         <td class="odds">
-          1250.5<span class="imp"> · 0.1%</span>
+          1250/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
@@ -529,40 +536,40 @@
     <table>
       
       <tr>
-        <td><span class="team ">Morocco</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ma.png" alt="" loading="lazy"><span class="tname">Morocco</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 4-2 vs Haiti</span>
         </td>
         <td class="odds">
-          41.0<span class="imp"> · 2.4%</span>
+          40/1<span class="imp"> · 2.4%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Uruguay</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/uy.png" alt="" loading="lazy"><span class="tname">Uruguay</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 2-2 vs Cape Verde Islands</span>
         </td>
         <td class="odds">
-          251.0<span class="imp"> · 0.4%</span>
+          250/1<span class="imp"> · 0.4%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Ecuador</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ec.png" alt="" loading="lazy"><span class="tname">Ecuador</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 0-0 vs Curaçao</span>
         </td>
         <td class="odds">
-          351.0<span class="imp"> · 0.3%</span>
+          350/1<span class="imp"> · 0.3%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team dead">Haiti</span></td>
+        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/ht.png" alt="" loading="lazy"><span class="tname">Haiti</span></span></td>
         <td><span class="pill out">out</span></td>
         <td class="res">
           <span class="L">L 2-4 vs Morocco</span>
@@ -583,46 +590,46 @@
     <table>
       
       <tr>
-        <td><span class="team ">Iran</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ir.png" alt="" loading="lazy"><span class="tname">Iran</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 0-0 vs Belgium</span>
         </td>
         <td class="odds">
-          801.0<span class="imp"> · 0.1%</span>
+          800/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Japan</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/jp.png" alt="" loading="lazy"><span class="tname">Japan</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 4-0 vs Tunisia</span>
         </td>
         <td class="odds">
-          46.0<span class="imp"> · 2.2%</span>
+          45/1<span class="imp"> · 2.2%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">England</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/gb-eng.png" alt="" loading="lazy"><span class="tname">England</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 0-0 vs Ghana</span>
         </td>
         <td class="odds">
-          8.0<span class="imp"> · 12.5%</span>
+          7/1<span class="imp"> · 12.5%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">New Zealand</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/nz.png" alt="" loading="lazy"><span class="tname">New Zealand</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 1-3 vs Egypt</span>
         </td>
         <td class="odds">
-          1001.0<span class="imp"> · 0.1%</span>
+          1000/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
@@ -637,46 +644,46 @@
     <table>
       
       <tr>
-        <td><span class="team ">Sweden</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/se.png" alt="" loading="lazy"><span class="tname">Sweden</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 1-5 vs Netherlands</span>
         </td>
         <td class="odds">
-          201.0<span class="imp"> · 0.5%</span>
+          200/1<span class="imp"> · 0.5%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">South Korea</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/kr.png" alt="" loading="lazy"><span class="tname">South Korea</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-1 vs South Africa</span>
         </td>
         <td class="odds">
-          430.0<span class="imp"> · 0.2%</span>
+          429/1<span class="imp"> · 0.2%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">France</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/fr.png" alt="" loading="lazy"><span class="tname">France</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 3-0 vs Iraq</span>
         </td>
         <td class="odds">
-          5.0<span class="imp"> · 20.0%</span>
+          4/1<span class="imp"> · 20.0%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Colombia</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/co.png" alt="" loading="lazy"><span class="tname">Colombia</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 1-0 vs Congo DR</span>
         </td>
         <td class="odds">
-          51.0<span class="imp"> · 2.0%</span>
+          50/1<span class="imp"> · 2.0%</span>
         </td>
       </tr>
       
@@ -691,29 +698,29 @@
     <table>
       
       <tr>
-        <td><span class="team ">Austria</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/at.png" alt="" loading="lazy"><span class="tname">Austria</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-2 vs Argentina</span>
         </td>
         <td class="odds">
-          201.0<span class="imp"> · 0.5%</span>
+          200/1<span class="imp"> · 0.5%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Argentina</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ar.png" alt="" loading="lazy"><span class="tname">Argentina</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 2-0 vs Austria</span>
         </td>
         <td class="odds">
-          7.0<span class="imp"> · 14.3%</span>
+          6/1<span class="imp"> · 14.3%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team dead">Panama</span></td>
+        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/pa.png" alt="" loading="lazy"><span class="tname">Panama</span></span></td>
         <td><span class="pill out">out</span></td>
         <td class="res">
           <span class="L">L 0-1 vs Croatia</span>
@@ -724,13 +731,13 @@
       </tr>
       
       <tr>
-        <td><span class="team ">Germany</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/de.png" alt="" loading="lazy"><span class="tname">Germany</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 2-1 vs Ivory Coast</span>
         </td>
         <td class="odds">
-          15.0<span class="imp"> · 6.7%</span>
+          14/1<span class="imp"> · 6.7%</span>
         </td>
       </tr>
       
@@ -745,46 +752,46 @@
     <table>
       
       <tr>
-        <td><span class="team ">Senegal</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/sn.png" alt="" loading="lazy"><span class="tname">Senegal</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 2-3 vs Norway</span>
         </td>
         <td class="odds">
-          151.0<span class="imp"> · 0.7%</span>
+          150/1<span class="imp"> · 0.7%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Congo DR</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/cd.png" alt="" loading="lazy"><span class="tname">Congo DR</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="L">L 0-1 vs Colombia</span>
         </td>
         <td class="odds">
-          1000.0<span class="imp"> · 0.1%</span>
+          999/1<span class="imp"> · 0.1%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Egypt</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/eg.png" alt="" loading="lazy"><span class="tname">Egypt</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="W">W 3-1 vs New Zealand</span>
         </td>
         <td class="odds">
-          251.0<span class="imp"> · 0.4%</span>
+          250/1<span class="imp"> · 0.4%</span>
         </td>
       </tr>
       
       <tr>
-        <td><span class="team ">Curaçao</span></td>
+        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/cw.png" alt="" loading="lazy"><span class="tname">Curaçao</span></span></td>
         <td><span class="pill in">in</span></td>
         <td class="res">
           <span class="D">D 0-0 vs Ecuador</span>
         </td>
         <td class="odds">
-          2501.0<span class="imp"> · 0.0%</span>
+          2500/1<span class="imp"> · 0.0%</span>
         </td>
       </tr>
       
@@ -793,7 +800,7 @@
   
 
   <div class="foot">
-    Results: football-data.org · Odds: the-odds-api.com (median across books, decimal · implied win %)<br>
+    Results: football-data.org · Odds: the-odds-api.com (median across books, fractional · implied win %) · Flags: flagcdn.com<br>
     A team drops to OUT when bookmakers remove it from the outright winner market.
   </div>
 </div>
