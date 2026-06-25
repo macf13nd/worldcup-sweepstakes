@@ -1,0 +1,12 @@
+{
+  "_comment": "Maps each sweepstakes team name to alternative names APIs may use. Matching is done on an accent-stripped, lowercased, punctuation-free canonical key, so only genuinely different spellings need listing here. Add an entry whenever a team shows up as '—' on the dashboard.",
+  "Czechia": ["Czech Republic"],
+  "Türkiye": ["Turkey", "Turkiye"],
+  "Côte d'Ivoire": ["Ivory Coast", "Cote d'Ivoire"],
+  "Cabo Verde": ["Cape Verde", "Cape Verde Islands"],
+  "Curaçao": ["Curacao"],
+  "Congo DR": ["DR Congo", "Democratic Republic of Congo", "Congo DR", "Congo-Kinshasa"],
+  "South Korea": ["Korea Republic", "Korea, South", "Republic of Korea"],
+  "United States": ["USA", "United States of America", "US"],
+  "Bosnia and Herzegovina": ["Bosnia & Herzegovina", "Bosnia-Herzegovina", "Bosnia and Herzegovina"]
+}

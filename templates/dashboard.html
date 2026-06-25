@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Cup 2026 Sweepstakes</title>
+<style>
+  :root {
+    --bg: #0f1419; --card: #1a2129; --line: #2a333d; --text: #e6edf3;
+    --muted: #8b97a3; --in: #3fb950; --out: #f85149; --accent: #ffd33d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .banner {
+    background: #3d2b00; border: 1px solid #6b4e00; color: var(--accent);
+    padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;
+  }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .05em;
+       color: var(--muted); margin: 28px 0 10px; }
+  .board { background: var(--card); border: 1px solid var(--line);
+           border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+  .board-row { display: flex; align-items: center; gap: 10px;
+               padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .board-row:last-child { border-bottom: 0; }
+  .rank { width: 22px; color: var(--muted); text-align: right; }
+  .board-row .who { flex: 1; }
+  .board-row .alive { color: var(--in); font-variant-numeric: tabular-nums; }
+
+  .person { background: var(--card); border: 1px solid var(--line);
+            border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
+  .person-head { display: flex; justify-content: space-between; align-items: baseline;
+                 padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .person-head .name { font-weight: 600; }
+  .person-head .tally { font-size: 13px; color: var(--muted); }
+  .person-head .tally b { color: var(--in); }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  .team { font-weight: 500; }
+  .team.dead { color: var(--muted); text-decoration: line-through; }
+  td.res { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .res .W { color: var(--in); } .res .L { color: var(--out); } .res .D { color: var(--accent); }
+  td.odds { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.odds .imp { color: var(--muted); font-size: 12px; }
+  .pill { display: inline-block; min-width: 38px; text-align: center;
+          font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+          text-transform: uppercase; letter-spacing: .04em; }
+  .pill.in { background: rgba(63,185,80,.15); color: var(--in); }
+  .pill.out { background: rgba(248,81,73,.15); color: var(--out); }
+  .pill.unknown { background: rgba(139,151,163,.15); color: var(--muted); }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 32px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚽ World Cup 2026 Sweepstakes</h1>
+  <div class="sub">Updated {{ updated }} · refreshes daily</div>
+
+  {% if not have_odds or not have_results %}
+  <div class="banner">
+    Waiting for live data —
+    {% if not have_results %}results{% endif %}
+    {% if not have_results and not have_odds %} and {% endif %}
+    {% if not have_odds %}odds{% endif %}
+    not yet available. {% if errors %}({{ errors | join("; ") }}){% endif %}
+    Status shows once the feeds are connected.
+  </div>
+  {% endif %}
+
+  <h2>Leaderboard</h2>
+  <div class="board">
+    {% for p in leaderboard %}
+    <div class="board-row">
+      <span class="rank">{{ loop.index }}</span>
+      <span class="who">{{ p.name }}</span>
+      <span class="alive">{{ p.alive }}/{{ p.total }} alive</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% for p in people %}
+  <div class="person">
+    <div class="person-head">
+      <span class="name">{{ p.name }}</span>
+      <span class="tally"><b>{{ p.alive }}</b> of {{ p.total }} still in</span>
+    </div>
+    <table>
+      {% for t in p.teams %}
+      <tr>
+        <td><span class="team {% if t.status == 'out' %}dead{% endif %}">{{ t.name }}</span></td>
+        <td><span class="pill {{ t.status }}">{{ t.status }}</span></td>
+        <td class="res">
+          {% if t.outcome %}<span class="{{ t.outcome }}">{{ t.result }}</span>{% else %}{{ t.result }}{% endif %}
+        </td>
+        <td class="odds">
+          {% if t.odds_decimal %}{{ "%.1f"|format(t.odds_decimal) }}<span class="imp"> · {{ t.odds_implied }}%</span>{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endfor %}
+
+  <div class="foot">
+    Results: football-data.org · Odds: the-odds-api.com (median across books, decimal · implied win %)<br>
+    A team drops to OUT when bookmakers remove it from the outright winner market.
+  </div>
+</div>
+</body>
+</html>

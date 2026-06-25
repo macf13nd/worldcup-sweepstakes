@@ -1,0 +1,44 @@
+name: Refresh dashboard
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # daily ~07:00 UTC, after US evening fixtures wrap
+  workflow_dispatch: {}    # manual "refresh now" button
+
+permissions:
+  contents: write          # commit the regenerated page back to main
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Build dashboard
+        env:
+          FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python build.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet docs/index.html; then
+            git add docs/index.html
+            git commit -m "Refresh dashboard ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push
+          else
+            echo "No changes."
+          fi
