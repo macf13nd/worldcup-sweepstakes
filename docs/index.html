@@ -33,6 +33,11 @@
                padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
   .board-row:last-child { border-bottom: 0; }
   .rank { width: 22px; color: var(--muted); text-align: right; }
+  .board-row .mv { min-width: 32px; text-align: center; font-size: 12px;
+                   font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mv-up { color: var(--in); }
+  .mv-down { color: var(--out); }
+  .mv-same, .mv-new { color: var(--muted); font-weight: 400; }
   .board-row .who { flex: 1; }
   .board-row .lb-alive { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
   .board-row .lb-pct { color: var(--accent); font-weight: 700; min-width: 54px;
@@ -103,7 +108,7 @@
 <body>
 <div class="wrap">
   <h1>⚽ World Cup 2026 Sweepstakes</h1>
-  <div class="sub">Updated 2026-06-25 14:53 UTC · refreshes daily</div>
+  <div class="sub">Updated 2026-06-25 19:37 UTC · refreshes daily</div>
 
   
 
@@ -112,6 +117,7 @@
     
     <div class="board-row">
       <span class="rank">1</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Shah Qureshi</span>
       <span class="lb-alive">4/4 in</span>
       <span class="lb-pct">22.7%</span>
@@ -119,6 +125,7 @@
     
     <div class="board-row">
       <span class="rank">2</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Simon Champion-MacPherson</span>
       <span class="lb-alive">3/4 in</span>
       <span class="lb-pct">21.5%</span>
@@ -126,6 +133,7 @@
     
     <div class="board-row">
       <span class="rank">3</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Darren Cooney</span>
       <span class="lb-alive">4/4 in</span>
       <span class="lb-pct">17.0%</span>
@@ -133,6 +141,7 @@
     
     <div class="board-row">
       <span class="rank">4</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Sean Blakeley</span>
       <span class="lb-alive">4/4 in</span>
       <span class="lb-pct">14.9%</span>
@@ -140,13 +149,15 @@
     
     <div class="board-row">
       <span class="rank">5</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Chris McConney</span>
       <span class="lb-alive">4/4 in</span>
-      <span class="lb-pct">14.2%</span>
+      <span class="lb-pct">14.4%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">6</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Adam Hollister</span>
       <span class="lb-alive">3/4 in</span>
       <span class="lb-pct">9.8%</span>
@@ -154,6 +165,7 @@
     
     <div class="board-row">
       <span class="rank">7</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Carmine Colicino</span>
       <span class="lb-alive">2/4 in</span>
       <span class="lb-pct">8.1%</span>
@@ -161,6 +173,7 @@
     
     <div class="board-row">
       <span class="rank">8</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Ryan Golds</span>
       <span class="lb-alive">3/4 in</span>
       <span class="lb-pct">3.1%</span>
@@ -168,6 +181,7 @@
     
     <div class="board-row">
       <span class="rank">9</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Dimitra Chaloglou</span>
       <span class="lb-alive">4/4 in</span>
       <span class="lb-pct">3.0%</span>
@@ -175,6 +189,7 @@
     
     <div class="board-row">
       <span class="rank">10</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Georgia Cottle</span>
       <span class="lb-alive">4/4 in</span>
       <span class="lb-pct">1.4%</span>
@@ -182,6 +197,7 @@
     
     <div class="board-row">
       <span class="rank">11</span>
+      <span class="mv mv-new">·</span>
       <span class="who">Tom Reed</span>
       <span class="lb-alive">4/4 in</span>
       <span class="lb-pct">1.2%</span>
@@ -189,6 +205,7 @@
     
     <div class="board-row">
       <span class="rank">12</span>
+      <span class="mv mv-new">·</span>
       <span class="who">John Jeeves</span>
       <span class="lb-alive">2/4 in</span>
       <span class="lb-pct">0.3%</span>
@@ -391,7 +408,7 @@
             vs Turkey <span class="when">· Fri 26 Jun</span>
           </td>
           <td class="c-odds">
-            31/1<span class="imp"> · 3.1%</span>
+            29/1<span class="imp"> · 3.3%</span>
           </td>
         </tr>
         
@@ -969,7 +986,7 @@
             <span class="muted">—</span>
           </td>
           <td class="c-odds">
-            429/1<span class="imp"> · 0.2%</span>
+            639/1<span class="imp"> · 0.2%</span>
           </td>
         </tr>
         

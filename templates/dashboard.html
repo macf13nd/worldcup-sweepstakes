@@ -33,6 +33,11 @@
                padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
   .board-row:last-child { border-bottom: 0; }
   .rank { width: 22px; color: var(--muted); text-align: right; }
+  .board-row .mv { min-width: 32px; text-align: center; font-size: 12px;
+                   font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mv-up { color: var(--in); }
+  .mv-down { color: var(--out); }
+  .mv-same, .mv-new { color: var(--muted); font-weight: 400; }
   .board-row .who { flex: 1; }
   .board-row .lb-alive { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
   .board-row .lb-pct { color: var(--accent); font-weight: 700; min-width: 54px;
@@ -121,6 +126,12 @@
     {% for p in leaderboard %}
     <div class="board-row">
       <span class="rank">{{ loop.index }}</span>
+      <span class="mv mv-{{ p.move.dir if p.move else 'new' }}">
+        {%- if p.move and p.move.dir == 'up' %}▲{{ p.move.delta }}
+        {%- elif p.move and p.move.dir == 'down' %}▼{{ p.move.delta }}
+        {%- elif p.move and p.move.dir == 'same' %}–
+        {%- else %}·{% endif -%}
+      </span>
       <span class="who">{{ p.name }}</span>
       <span class="lb-alive">{{ p.alive }}/{{ p.total }} in</span>
       <span class="lb-pct">{{ p.win_pct }}%</span>

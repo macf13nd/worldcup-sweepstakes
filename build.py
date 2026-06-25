@@ -25,6 +25,7 @@ ROOT = Path(__file__).parent
 FD_BASE = "https://api.football-data.org/v4"
 ODDS_SPORT = "soccer_fifa_world_cup_winner"
 ODDS_BASE = "https://api.the-odds-api.com/v4"
+SNAPSHOT = ROOT / "data" / "standings.json"
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +195,79 @@ def lookup(keys, table):
     return None
 
 
+# ---------------------------------------------------------------------------
+# Daily movement (rank change vs the previous day) — persisted in a small
+# committed JSON file, so no database is needed; git history is the audit trail.
+# ---------------------------------------------------------------------------
+def today_date():
+    """UTC date as YYYY-MM-DD. Overridable via WC_TODAY to test the day-roll."""
+    return os.environ.get("WC_TODAY") or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def load_snapshot(path=SNAPSHOT):
+    if path.exists():
+        try:
+            return json.loads(path.read_text())
+        except Exception:  # noqa: BLE001 - a corrupt file just resets movement
+            return {}
+    return {}
+
+
+def roll_snapshot(snap, today_order, today):
+    """Roll the two-snapshot file forward.
+
+    Returns (baseline_order, new_snap). baseline_order is the prior *day's*
+    ranking to draw arrows against (or None on the first ever run). The baseline
+    only advances when the date changes, so multiple runs in one day keep the
+    arrows day-over-day rather than intraday.
+    """
+    current = snap.get("current")
+    if not current:
+        new_prev = snap.get("previous")          # first ever run (usually None)
+    elif current.get("date") == today:
+        new_prev = snap.get("previous")          # same-day re-run: freeze baseline
+    else:
+        new_prev = current                       # new day: yesterday becomes baseline
+    baseline_order = new_prev.get("order") if new_prev else None
+    new_snap = {"previous": new_prev, "current": {"date": today, "order": today_order}}
+    return baseline_order, new_snap
+
+
+def save_snapshot(snap, path=SNAPSHOT):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(snap, indent=2, ensure_ascii=False) + "\n")
+
+
+def compute_movement(today_order, prev_order):
+    """Map name -> {'dir': 'up'|'down'|'same'|'new', 'delta': places moved}.
+
+    Pure function: positive delta = climbed. No baseline => everyone 'new'.
+    """
+    prev_rank = {name: i for i, name in enumerate(prev_order)} if prev_order else {}
+    movement = {}
+    for i, name in enumerate(today_order):
+        if name not in prev_rank:
+            movement[name] = {"dir": "new", "delta": 0}
+            continue
+        delta = prev_rank[name] - i  # smaller index now = moved up
+        movement[name] = {
+            "dir": "up" if delta > 0 else "down" if delta < 0 else "same",
+            "delta": abs(delta),
+        }
+    return movement
+
+
+def render_page(people, leaderboard, meta):
+    """Render the dashboard HTML. Network-free, so demo/tests can call it."""
+    env = Environment(
+        loader=FileSystemLoader(str(ROOT / "templates")),
+        autoescape=select_autoescape(["html"]),
+    )
+    return env.get_template("dashboard.html").render(
+        people=people, leaderboard=leaderboard, **meta
+    )
+
+
 def build():
     load_env()
     draw = json.loads((ROOT / "draw.json").read_text())
@@ -260,21 +334,23 @@ def build():
         key=lambda p: (-p["win_pct"], -p["alive"]),
     )
 
-    env = Environment(
-        loader=FileSystemLoader(str(ROOT / "templates")),
-        autoescape=select_autoescape(["html"]),
-    )
-    template = env.get_template("dashboard.html")
-    html = template.render(
-        people=people,
-        leaderboard=leaderboard,
-        updated=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-        have_odds=have_odds,
-        have_results=bool(results),
-        errors=[e for e in (results_err, odds_err) if e],
-    )
+    # Daily movement vs the previous day's standings (committed snapshot)
+    today = today_date()
+    today_order = [p["name"] for p in leaderboard]
+    baseline_order, new_snap = roll_snapshot(load_snapshot(), today_order, today)
+    movement = compute_movement(today_order, baseline_order)
+    for p in leaderboard:
+        p["move"] = movement.get(p["name"])
+
+    html = render_page(people, leaderboard, {
+        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "have_odds": have_odds,
+        "have_results": bool(results),
+        "errors": [e for e in (results_err, odds_err) if e],
+    })
     out = ROOT / "docs" / "index.html"
     out.write_text(html)
+    save_snapshot(new_snap)
     print(f"Wrote {out}")
     unmatched = [
         f"{p['name']}: {t['name']}"

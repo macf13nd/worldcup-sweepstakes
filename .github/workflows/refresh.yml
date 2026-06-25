@@ -35,8 +35,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet docs/index.html; then
-            git add docs/index.html
+          git add docs/index.html data/standings.json
+          if ! git diff --cached --quiet; then
             git commit -m "Refresh dashboard ($(date -u +%Y-%m-%dT%H:%MZ))"
             git push
           else
