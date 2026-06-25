@@ -8,6 +8,7 @@
   :root {
     --bg: #0f1419; --card: #1a2129; --line: #2a333d; --text: #e6edf3;
     --muted: #8b97a3; --in: #3fb950; --out: #f85149; --accent: #ffd33d;
+    --groupbg: #11171d;
   }
   * { box-sizing: border-box; }
   body {
@@ -15,7 +16,7 @@
     font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding: 24px 16px 64px;
   }
-  .wrap { max-width: 760px; margin: 0 auto; }
+  .wrap { max-width: 820px; margin: 0 auto; }
   h1 { font-size: 22px; margin: 0 0 2px; }
   .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
   .banner {
@@ -24,6 +25,8 @@
   }
   h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .05em;
        color: var(--muted); margin: 28px 0 10px; }
+
+  /* Leaderboard */
   .board { background: var(--card); border: 1px solid var(--line);
            border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
   .board-row { display: flex; align-items: center; gap: 10px;
@@ -31,776 +34,1148 @@
   .board-row:last-child { border-bottom: 0; }
   .rank { width: 22px; color: var(--muted); text-align: right; }
   .board-row .who { flex: 1; }
-  .board-row .alive { color: var(--in); font-variant-numeric: tabular-nums; }
+  .board-row .lb-alive { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .board-row .lb-pct { color: var(--accent); font-weight: 700; min-width: 54px;
+                       text-align: right; font-variant-numeric: tabular-nums; }
+  h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
 
-  .person { background: var(--card); border: 1px solid var(--line);
-            border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
-  .person-head { display: flex; justify-content: space-between; align-items: center;
-                 padding: 11px 14px 11px 16px; background: #11171d;
-                 border-bottom: 1px solid var(--line); border-left: 3px solid var(--accent); }
-  .person-head .name { font-weight: 700; font-size: 16px; letter-spacing: .01em;
-                       color: #fff; }
-  .person-head .tally { font-size: 12px; color: var(--muted);
-                        text-transform: uppercase; letter-spacing: .04em; }
-  .person-head .tally b { color: var(--in); font-size: 14px; }
-  table { width: 100%; border-collapse: collapse; }
-  td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  tr:last-child td { border-bottom: 0; }
-  .team { font-weight: 400; font-size: 14px; display: inline-flex; align-items: center; gap: 9px; }
+  /* Standings table */
+  /* No overflow:hidden anywhere above the table — it would break sticky thead. */
+  .grid { width: 100%; border-collapse: separate; border-spacing: 0;
+          background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  .grid thead th {
+    position: sticky; top: 0; z-index: 2; background: var(--groupbg);
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--muted); font-weight: 600; padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .grid thead th:first-child { border-top-left-radius: 10px; }
+  .grid thead th:last-child { border-top-right-radius: 10px; }
+  .grid thead th.c-odds { text-align: right; }
+  .grid td { padding: 9px 12px; border-bottom: 1px solid var(--line);
+             vertical-align: middle; font-size: 14px; }
+  .grid tbody tr:last-child td { border-bottom: 0; }
+  .grid tbody tr:last-child td:first-child { border-bottom-left-radius: 10px; }
+  .grid tbody tr:last-child td:last-child { border-bottom-right-radius: 10px; }
+
+  .grid tr.group td {
+    background: var(--groupbg); border-left: 3px solid var(--accent);
+    padding: 10px 13px;
+  }
+  .grid tr.group .gname { font-weight: 700; font-size: 15px; color: #fff; }
+  .grid tr.group .gtally { font-size: 12px; color: var(--muted);
+                           text-transform: uppercase; letter-spacing: .04em; margin-left: 9px; }
+  .grid tr.group .gtally b { color: var(--in); font-size: 13px; }
+
+  .team { font-weight: 400; display: inline-flex; align-items: center; gap: 9px; }
   .flag { width: 22px; height: 16px; border-radius: 2px; object-fit: cover;
           box-shadow: 0 0 0 1px rgba(255,255,255,.12); flex: none; }
   .team.dead { color: var(--muted); }
   .team.dead .flag { filter: grayscale(1) opacity(.55); }
   .team.dead .tname { text-decoration: line-through; }
-  td.res { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-  .res .W { color: var(--in); } .res .L { color: var(--out); } .res .D { color: var(--accent); }
-  td.odds { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  td.odds .imp { color: var(--muted); font-size: 12px; }
+
+  td.c-last { color: var(--muted); font-size: 13px; white-space: nowrap;
+              font-variant-numeric: tabular-nums; }
+  .c-last .W { color: var(--in); } .c-last .L { color: var(--out); } .c-last .D { color: var(--accent); }
+  .c-last .opp { color: var(--muted); }
+  td.c-next { font-size: 13px; white-space: nowrap; }
+  .c-next .when { color: var(--muted); }
+  td.c-odds { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.c-odds .imp { color: var(--muted); font-size: 12px; }
+  .muted { color: var(--muted); }
+
   .pill { display: inline-block; min-width: 38px; text-align: center;
           font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
           text-transform: uppercase; letter-spacing: .04em; }
   .pill.in { background: rgba(63,185,80,.15); color: var(--in); }
   .pill.out { background: rgba(248,81,73,.15); color: var(--out); }
   .pill.unknown { background: rgba(139,151,163,.15); color: var(--muted); }
+
   .foot { color: var(--muted); font-size: 12px; margin-top: 32px; text-align: center; }
+
+  @media (max-width: 560px) {
+    body { padding: 18px 10px 56px; }
+    .grid td, .grid thead th { padding-left: 8px; padding-right: 8px; }
+    .c-last .opp, .c-next .when { display: none; }   /* keep 5 cols phone-friendly */
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>⚽ World Cup 2026 Sweepstakes</h1>
-  <div class="sub">Updated 2026-06-25 14:28 UTC · refreshes daily</div>
+  <div class="sub">Updated 2026-06-25 14:53 UTC · refreshes daily</div>
 
   
 
-  <h2>Leaderboard</h2>
+  <h2>Leaderboard <span class="hint">— by combined win chance</span></h2>
   <div class="board">
     
     <div class="board-row">
       <span class="rank">1</span>
       <span class="who">Shah Qureshi</span>
-      <span class="alive">4/4 alive</span>
+      <span class="lb-alive">4/4 in</span>
+      <span class="lb-pct">22.7%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">2</span>
-      <span class="who">Darren Cooney</span>
-      <span class="alive">4/4 alive</span>
+      <span class="who">Simon Champion-MacPherson</span>
+      <span class="lb-alive">3/4 in</span>
+      <span class="lb-pct">21.5%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">3</span>
-      <span class="who">Sean Blakeley</span>
-      <span class="alive">4/4 alive</span>
+      <span class="who">Darren Cooney</span>
+      <span class="lb-alive">4/4 in</span>
+      <span class="lb-pct">17.0%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">4</span>
-      <span class="who">Chris McConney</span>
-      <span class="alive">4/4 alive</span>
+      <span class="who">Sean Blakeley</span>
+      <span class="lb-alive">4/4 in</span>
+      <span class="lb-pct">14.9%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">5</span>
-      <span class="who">Dimitra Chaloglou</span>
-      <span class="alive">4/4 alive</span>
+      <span class="who">Chris McConney</span>
+      <span class="lb-alive">4/4 in</span>
+      <span class="lb-pct">14.2%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">6</span>
-      <span class="who">Georgia Cottle</span>
-      <span class="alive">4/4 alive</span>
+      <span class="who">Adam Hollister</span>
+      <span class="lb-alive">3/4 in</span>
+      <span class="lb-pct">9.8%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">7</span>
-      <span class="who">Tom Reed</span>
-      <span class="alive">4/4 alive</span>
+      <span class="who">Carmine Colicino</span>
+      <span class="lb-alive">2/4 in</span>
+      <span class="lb-pct">8.1%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">8</span>
-      <span class="who">Simon Champion-McPherson</span>
-      <span class="alive">3/4 alive</span>
+      <span class="who">Ryan Golds</span>
+      <span class="lb-alive">3/4 in</span>
+      <span class="lb-pct">3.1%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">9</span>
-      <span class="who">Adam Hollister</span>
-      <span class="alive">3/4 alive</span>
+      <span class="who">Dimitra Chaloglou</span>
+      <span class="lb-alive">4/4 in</span>
+      <span class="lb-pct">3.0%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">10</span>
-      <span class="who">Ryan Golds</span>
-      <span class="alive">3/4 alive</span>
+      <span class="who">Georgia Cottle</span>
+      <span class="lb-alive">4/4 in</span>
+      <span class="lb-pct">1.4%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">11</span>
-      <span class="who">Carmine Colicino</span>
-      <span class="alive">2/4 alive</span>
+      <span class="who">Tom Reed</span>
+      <span class="lb-alive">4/4 in</span>
+      <span class="lb-pct">1.2%</span>
     </div>
     
     <div class="board-row">
       <span class="rank">12</span>
       <span class="who">John Jeeves</span>
-      <span class="alive">2/4 alive</span>
+      <span class="lb-alive">2/4 in</span>
+      <span class="lb-pct">0.3%</span>
     </div>
     
   </div>
 
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Adam Hollister</span>
-      <span class="tally"><b>3</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/no.png" alt="" loading="lazy"><span class="tname">Norway</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 3-2 vs Senegal</span>
-        </td>
-        <td class="odds">
-          33/1<span class="imp"> · 2.9%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/gb-sct.png" alt="" loading="lazy"><span class="tname">Scotland</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-3 vs Brazil</span>
-        </td>
-        <td class="odds">
-          500/1<span class="imp"> · 0.2%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/qa.png" alt="" loading="lazy"><span class="tname">Qatar</span></span></td>
-        <td><span class="pill out">out</span></td>
-        <td class="res">
-          <span class="L">L 1-3 vs Bosnia-Herzegovina</span>
-        </td>
-        <td class="odds">
-          —
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/nl.png" alt="" loading="lazy"><span class="tname">Netherlands</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 5-1 vs Sweden</span>
-        </td>
-        <td class="odds">
-          14/1<span class="imp"> · 6.7%</span>
-        </td>
-      </tr>
-      
+  <h2>Standings</h2>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th class="c-team">Team</th>
+          <th class="c-status">Status</th>
+          <th class="c-last">Last</th>
+          <th class="c-next">Next</th>
+          <th class="c-odds">Odds</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Adam Hollister</span>
+            <span class="gtally"><b>3</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/no.png" alt="" loading="lazy"><span class="tname">Norway</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 3-2</span> <span class="opp">Senegal</span>
+          </td>
+          <td class="c-next">
+            vs France <span class="when">· Fri 26 Jun</span>
+          </td>
+          <td class="c-odds">
+            33/1<span class="imp"> · 2.9%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/gb-sct.png" alt="" loading="lazy"><span class="tname">Scotland</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-3</span> <span class="opp">Brazil</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            500/1<span class="imp"> · 0.2%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team dead">
+              <img class="flag" src="https://flagcdn.com/h20/qa.png" alt="" loading="lazy"><span class="tname">Qatar</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill out">out</span></td>
+          <td class="c-last">
+            <span class="L">L 1-3</span> <span class="opp">Bosnia-Herzegovina</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            <span class="muted">—</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/nl.png" alt="" loading="lazy"><span class="tname">Netherlands</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 5-1</span> <span class="opp">Sweden</span>
+          </td>
+          <td class="c-next">
+            vs Tunisia <span class="when">· Thu 25 Jun</span>
+          </td>
+          <td class="c-odds">
+            14/1<span class="imp"> · 6.7%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Carmine Colicino</span>
+            <span class="gtally"><b>2</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ca.png" alt="" loading="lazy"><span class="tname">Canada</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 1-2</span> <span class="opp">Switzerland</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            150/1<span class="imp"> · 0.7%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team dead">
+              <img class="flag" src="https://flagcdn.com/h20/tn.png" alt="" loading="lazy"><span class="tname">Tunisia</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill out">out</span></td>
+          <td class="c-last">
+            <span class="L">L 0-4</span> <span class="opp">Japan</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            <span class="muted">—</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/br.png" alt="" loading="lazy"><span class="tname">Brazil</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 3-0</span> <span class="opp">Scotland</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            12/1<span class="imp"> · 7.4%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team dead">
+              <img class="flag" src="https://flagcdn.com/h20/tr.png" alt="" loading="lazy"><span class="tname">Türkiye</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill out">out</span></td>
+          <td class="c-last">
+            <span class="L">L 0-1</span> <span class="opp">Paraguay</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            <span class="muted">—</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Chris McConney</span>
+            <span class="gtally"><b>4</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/us.png" alt="" loading="lazy"><span class="tname">United States</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 2-0</span> <span class="opp">Australia</span>
+          </td>
+          <td class="c-next">
+            vs Turkey <span class="when">· Fri 26 Jun</span>
+          </td>
+          <td class="c-odds">
+            31/1<span class="imp"> · 3.1%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/be.png" alt="" loading="lazy"><span class="tname">Belgium</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 0-0</span> <span class="opp">Iran</span>
+          </td>
+          <td class="c-next">
+            vs New Zealand <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            50/1<span class="imp"> · 2.0%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/iq.png" alt="" loading="lazy"><span class="tname">Iraq</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-3</span> <span class="opp">France</span>
+          </td>
+          <td class="c-next">
+            vs Senegal <span class="when">· Fri 26 Jun</span>
+          </td>
+          <td class="c-odds">
+            2500/1<span class="imp"> · 0.0%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/pt.png" alt="" loading="lazy"><span class="tname">Portugal</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 5-0</span> <span class="opp">Uzbekistan</span>
+          </td>
+          <td class="c-next">
+            vs Colombia <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            10/1<span class="imp"> · 9.1%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Darren Cooney</span>
+            <span class="gtally"><b>4</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ch.png" alt="" loading="lazy"><span class="tname">Switzerland</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 2-1</span> <span class="opp">Canada</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            70/1<span class="imp"> · 1.4%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/es.png" alt="" loading="lazy"><span class="tname">Spain</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 4-0</span> <span class="opp">Saudi Arabia</span>
+          </td>
+          <td class="c-next">
+            vs Uruguay <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            11/2<span class="imp"> · 15.4%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/cv.png" alt="" loading="lazy"><span class="tname">Cabo Verde</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 2-2</span> <span class="opp">Uruguay</span>
+          </td>
+          <td class="c-next">
+            vs Saudi Arabia <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            1000/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/za.png" alt="" loading="lazy"><span class="tname">South Africa</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 1-0</span> <span class="opp">South Korea</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            999/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Dimitra Chaloglou</span>
+            <span class="gtally"><b>4</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ba.png" alt="" loading="lazy"><span class="tname">Bosnia and Herzegovina</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 3-1</span> <span class="opp">Qatar</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            700/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/dz.png" alt="" loading="lazy"><span class="tname">Algeria</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 2-1</span> <span class="opp">Jordan</span>
+          </td>
+          <td class="c-next">
+            vs Austria <span class="when">· Sun 28 Jun</span>
+          </td>
+          <td class="c-odds">
+            500/1<span class="imp"> · 0.2%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/mx.png" alt="" loading="lazy"><span class="tname">Mexico</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 3-0</span> <span class="opp">Czechia</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            55/1<span class="imp"> · 1.8%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/hr.png" alt="" loading="lazy"><span class="tname">Croatia</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 1-0</span> <span class="opp">Panama</span>
+          </td>
+          <td class="c-next">
+            vs Ghana <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            110/1<span class="imp"> · 0.9%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Georgia Cottle</span>
+            <span class="gtally"><b>4</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ci.png" alt="" loading="lazy"><span class="tname">Côte d&#39;Ivoire</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 1-2</span> <span class="opp">Germany</span>
+          </td>
+          <td class="c-next">
+            vs Curaçao <span class="when">· Thu 25 Jun</span>
+          </td>
+          <td class="c-odds">
+            150/1<span class="imp"> · 0.7%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/au.png" alt="" loading="lazy"><span class="tname">Australia</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-2</span> <span class="opp">United States</span>
+          </td>
+          <td class="c-next">
+            vs Paraguay <span class="when">· Fri 26 Jun</span>
+          </td>
+          <td class="c-odds">
+            250/1<span class="imp"> · 0.4%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/py.png" alt="" loading="lazy"><span class="tname">Paraguay</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 1-0</span> <span class="opp">Turkey</span>
+          </td>
+          <td class="c-next">
+            vs Australia <span class="when">· Fri 26 Jun</span>
+          </td>
+          <td class="c-odds">
+            450/1<span class="imp"> · 0.2%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/sa.png" alt="" loading="lazy"><span class="tname">Saudi Arabia</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-4</span> <span class="opp">Spain</span>
+          </td>
+          <td class="c-next">
+            vs Cape Verde Islands <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            1000/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">John Jeeves</span>
+            <span class="gtally"><b>2</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team dead">
+              <img class="flag" src="https://flagcdn.com/h20/cz.png" alt="" loading="lazy"><span class="tname">Czechia</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill out">out</span></td>
+          <td class="c-last">
+            <span class="L">L 0-3</span> <span class="opp">Mexico</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            <span class="muted">—</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team dead">
+              <img class="flag" src="https://flagcdn.com/h20/jo.png" alt="" loading="lazy"><span class="tname">Jordan</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill out">out</span></td>
+          <td class="c-last">
+            <span class="L">L 1-2</span> <span class="opp">Algeria</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            <span class="muted">—</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/gh.png" alt="" loading="lazy"><span class="tname">Ghana</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 0-0</span> <span class="opp">England</span>
+          </td>
+          <td class="c-next">
+            vs Croatia <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            400/1<span class="imp"> · 0.2%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/uz.png" alt="" loading="lazy"><span class="tname">Uzbekistan</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-5</span> <span class="opp">Portugal</span>
+          </td>
+          <td class="c-next">
+            vs Congo DR <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            1250/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Ryan Golds</span>
+            <span class="gtally"><b>3</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ma.png" alt="" loading="lazy"><span class="tname">Morocco</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 4-2</span> <span class="opp">Haiti</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            40/1<span class="imp"> · 2.4%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/uy.png" alt="" loading="lazy"><span class="tname">Uruguay</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 2-2</span> <span class="opp">Cape Verde Islands</span>
+          </td>
+          <td class="c-next">
+            vs Spain <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            250/1<span class="imp"> · 0.4%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ec.png" alt="" loading="lazy"><span class="tname">Ecuador</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 0-0</span> <span class="opp">Curaçao</span>
+          </td>
+          <td class="c-next">
+            vs Germany <span class="when">· Thu 25 Jun</span>
+          </td>
+          <td class="c-odds">
+            350/1<span class="imp"> · 0.3%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team dead">
+              <img class="flag" src="https://flagcdn.com/h20/ht.png" alt="" loading="lazy"><span class="tname">Haiti</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill out">out</span></td>
+          <td class="c-last">
+            <span class="L">L 2-4</span> <span class="opp">Morocco</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            <span class="muted">—</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Sean Blakeley</span>
+            <span class="gtally"><b>4</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ir.png" alt="" loading="lazy"><span class="tname">Iran</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 0-0</span> <span class="opp">Belgium</span>
+          </td>
+          <td class="c-next">
+            vs Egypt <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            800/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/jp.png" alt="" loading="lazy"><span class="tname">Japan</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 4-0</span> <span class="opp">Tunisia</span>
+          </td>
+          <td class="c-next">
+            vs Sweden <span class="when">· Thu 25 Jun</span>
+          </td>
+          <td class="c-odds">
+            45/1<span class="imp"> · 2.2%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/gb-eng.png" alt="" loading="lazy"><span class="tname">England</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 0-0</span> <span class="opp">Ghana</span>
+          </td>
+          <td class="c-next">
+            vs Panama <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            7/1<span class="imp"> · 12.5%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/nz.png" alt="" loading="lazy"><span class="tname">New Zealand</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 1-3</span> <span class="opp">Egypt</span>
+          </td>
+          <td class="c-next">
+            vs Belgium <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            1000/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Shah Qureshi</span>
+            <span class="gtally"><b>4</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/se.png" alt="" loading="lazy"><span class="tname">Sweden</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 1-5</span> <span class="opp">Netherlands</span>
+          </td>
+          <td class="c-next">
+            vs Japan <span class="when">· Thu 25 Jun</span>
+          </td>
+          <td class="c-odds">
+            200/1<span class="imp"> · 0.5%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/kr.png" alt="" loading="lazy"><span class="tname">South Korea</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-1</span> <span class="opp">South Africa</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            429/1<span class="imp"> · 0.2%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/fr.png" alt="" loading="lazy"><span class="tname">France</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 3-0</span> <span class="opp">Iraq</span>
+          </td>
+          <td class="c-next">
+            vs Norway <span class="when">· Fri 26 Jun</span>
+          </td>
+          <td class="c-odds">
+            4/1<span class="imp"> · 20.0%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/co.png" alt="" loading="lazy"><span class="tname">Colombia</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 1-0</span> <span class="opp">Congo DR</span>
+          </td>
+          <td class="c-next">
+            vs Portugal <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            50/1<span class="imp"> · 2.0%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Simon Champion-MacPherson</span>
+            <span class="gtally"><b>3</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/at.png" alt="" loading="lazy"><span class="tname">Austria</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-2</span> <span class="opp">Argentina</span>
+          </td>
+          <td class="c-next">
+            vs Algeria <span class="when">· Sun 28 Jun</span>
+          </td>
+          <td class="c-odds">
+            200/1<span class="imp"> · 0.5%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/ar.png" alt="" loading="lazy"><span class="tname">Argentina</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 2-0</span> <span class="opp">Austria</span>
+          </td>
+          <td class="c-next">
+            vs Jordan <span class="when">· Sun 28 Jun</span>
+          </td>
+          <td class="c-odds">
+            6/1<span class="imp"> · 14.3%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team dead">
+              <img class="flag" src="https://flagcdn.com/h20/pa.png" alt="" loading="lazy"><span class="tname">Panama</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill out">out</span></td>
+          <td class="c-last">
+            <span class="L">L 0-1</span> <span class="opp">Croatia</span>
+          </td>
+          <td class="c-next">
+            <span class="muted">—</span>
+          </td>
+          <td class="c-odds">
+            <span class="muted">—</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/de.png" alt="" loading="lazy"><span class="tname">Germany</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 2-1</span> <span class="opp">Ivory Coast</span>
+          </td>
+          <td class="c-next">
+            vs Ecuador <span class="when">· Thu 25 Jun</span>
+          </td>
+          <td class="c-odds">
+            14/1<span class="imp"> · 6.7%</span>
+          </td>
+        </tr>
+        
+        
+        <tr class="group">
+          <td colspan="5">
+            <span class="gname">Tom Reed</span>
+            <span class="gtally"><b>4</b> of 4 in</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/sn.png" alt="" loading="lazy"><span class="tname">Senegal</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 2-3</span> <span class="opp">Norway</span>
+          </td>
+          <td class="c-next">
+            vs Iraq <span class="when">· Fri 26 Jun</span>
+          </td>
+          <td class="c-odds">
+            150/1<span class="imp"> · 0.7%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/cd.png" alt="" loading="lazy"><span class="tname">Congo DR</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="L">L 0-1</span> <span class="opp">Colombia</span>
+          </td>
+          <td class="c-next">
+            vs Uzbekistan <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            999/1<span class="imp"> · 0.1%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/eg.png" alt="" loading="lazy"><span class="tname">Egypt</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="W">W 3-1</span> <span class="opp">New Zealand</span>
+          </td>
+          <td class="c-next">
+            vs Iran <span class="when">· Sat 27 Jun</span>
+          </td>
+          <td class="c-odds">
+            250/1<span class="imp"> · 0.4%</span>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="c-team">
+            <span class="team ">
+              <img class="flag" src="https://flagcdn.com/h20/cw.png" alt="" loading="lazy"><span class="tname">Curaçao</span>
+            </span>
+          </td>
+          <td class="c-status"><span class="pill in">in</span></td>
+          <td class="c-last">
+            <span class="D">D 0-0</span> <span class="opp">Ecuador</span>
+          </td>
+          <td class="c-next">
+            vs Ivory Coast <span class="when">· Thu 25 Jun</span>
+          </td>
+          <td class="c-odds">
+            2500/1<span class="imp"> · 0.0%</span>
+          </td>
+        </tr>
+        
+        
+      </tbody>
     </table>
   </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Carmine Colicino</span>
-      <span class="tally"><b>2</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ca.png" alt="" loading="lazy"><span class="tname">Canada</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 1-2 vs Switzerland</span>
-        </td>
-        <td class="odds">
-          150/1<span class="imp"> · 0.7%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/tn.png" alt="" loading="lazy"><span class="tname">Tunisia</span></span></td>
-        <td><span class="pill out">out</span></td>
-        <td class="res">
-          <span class="L">L 0-4 vs Japan</span>
-        </td>
-        <td class="odds">
-          —
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/br.png" alt="" loading="lazy"><span class="tname">Brazil</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 3-0 vs Scotland</span>
-        </td>
-        <td class="odds">
-          12/1<span class="imp"> · 7.4%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/tr.png" alt="" loading="lazy"><span class="tname">Türkiye</span></span></td>
-        <td><span class="pill out">out</span></td>
-        <td class="res">
-          <span class="L">L 0-1 vs Paraguay</span>
-        </td>
-        <td class="odds">
-          —
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Chris McConney</span>
-      <span class="tally"><b>4</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/us.png" alt="" loading="lazy"><span class="tname">United States</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 2-0 vs Australia</span>
-        </td>
-        <td class="odds">
-          31/1<span class="imp"> · 3.1%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/be.png" alt="" loading="lazy"><span class="tname">Belgium</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 0-0 vs Iran</span>
-        </td>
-        <td class="odds">
-          50/1<span class="imp"> · 2.0%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/iq.png" alt="" loading="lazy"><span class="tname">Iraq</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-3 vs France</span>
-        </td>
-        <td class="odds">
-          2500/1<span class="imp"> · 0.0%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/pt.png" alt="" loading="lazy"><span class="tname">Portugal</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 5-0 vs Uzbekistan</span>
-        </td>
-        <td class="odds">
-          10/1<span class="imp"> · 9.1%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Darren Cooney</span>
-      <span class="tally"><b>4</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ch.png" alt="" loading="lazy"><span class="tname">Switzerland</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 2-1 vs Canada</span>
-        </td>
-        <td class="odds">
-          70/1<span class="imp"> · 1.4%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/es.png" alt="" loading="lazy"><span class="tname">Spain</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 4-0 vs Saudi Arabia</span>
-        </td>
-        <td class="odds">
-          11/2<span class="imp"> · 15.4%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/cv.png" alt="" loading="lazy"><span class="tname">Cabo Verde</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 2-2 vs Uruguay</span>
-        </td>
-        <td class="odds">
-          1000/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/za.png" alt="" loading="lazy"><span class="tname">South Africa</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 1-0 vs South Korea</span>
-        </td>
-        <td class="odds">
-          999/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Dimitra Chaloglou</span>
-      <span class="tally"><b>4</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ba.png" alt="" loading="lazy"><span class="tname">Bosnia and Herzegovina</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 3-1 vs Qatar</span>
-        </td>
-        <td class="odds">
-          700/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/dz.png" alt="" loading="lazy"><span class="tname">Algeria</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 2-1 vs Jordan</span>
-        </td>
-        <td class="odds">
-          500/1<span class="imp"> · 0.2%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/mx.png" alt="" loading="lazy"><span class="tname">Mexico</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 3-0 vs Czechia</span>
-        </td>
-        <td class="odds">
-          55/1<span class="imp"> · 1.8%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/hr.png" alt="" loading="lazy"><span class="tname">Croatia</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 1-0 vs Panama</span>
-        </td>
-        <td class="odds">
-          110/1<span class="imp"> · 0.9%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Georgia Cottle</span>
-      <span class="tally"><b>4</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ci.png" alt="" loading="lazy"><span class="tname">Côte d&#39;Ivoire</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 1-2 vs Germany</span>
-        </td>
-        <td class="odds">
-          150/1<span class="imp"> · 0.7%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/au.png" alt="" loading="lazy"><span class="tname">Australia</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-2 vs United States</span>
-        </td>
-        <td class="odds">
-          250/1<span class="imp"> · 0.4%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/py.png" alt="" loading="lazy"><span class="tname">Paraguay</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 1-0 vs Turkey</span>
-        </td>
-        <td class="odds">
-          450/1<span class="imp"> · 0.2%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/sa.png" alt="" loading="lazy"><span class="tname">Saudi Arabia</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-4 vs Spain</span>
-        </td>
-        <td class="odds">
-          1000/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">John Jeeves</span>
-      <span class="tally"><b>2</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/cz.png" alt="" loading="lazy"><span class="tname">Czechia</span></span></td>
-        <td><span class="pill out">out</span></td>
-        <td class="res">
-          <span class="L">L 0-3 vs Mexico</span>
-        </td>
-        <td class="odds">
-          —
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/jo.png" alt="" loading="lazy"><span class="tname">Jordan</span></span></td>
-        <td><span class="pill out">out</span></td>
-        <td class="res">
-          <span class="L">L 1-2 vs Algeria</span>
-        </td>
-        <td class="odds">
-          —
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/gh.png" alt="" loading="lazy"><span class="tname">Ghana</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 0-0 vs England</span>
-        </td>
-        <td class="odds">
-          400/1<span class="imp"> · 0.2%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/uz.png" alt="" loading="lazy"><span class="tname">Uzbekistan</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-5 vs Portugal</span>
-        </td>
-        <td class="odds">
-          1250/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Ryan Golds</span>
-      <span class="tally"><b>3</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ma.png" alt="" loading="lazy"><span class="tname">Morocco</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 4-2 vs Haiti</span>
-        </td>
-        <td class="odds">
-          40/1<span class="imp"> · 2.4%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/uy.png" alt="" loading="lazy"><span class="tname">Uruguay</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 2-2 vs Cape Verde Islands</span>
-        </td>
-        <td class="odds">
-          250/1<span class="imp"> · 0.4%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ec.png" alt="" loading="lazy"><span class="tname">Ecuador</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 0-0 vs Curaçao</span>
-        </td>
-        <td class="odds">
-          350/1<span class="imp"> · 0.3%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/ht.png" alt="" loading="lazy"><span class="tname">Haiti</span></span></td>
-        <td><span class="pill out">out</span></td>
-        <td class="res">
-          <span class="L">L 2-4 vs Morocco</span>
-        </td>
-        <td class="odds">
-          —
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Sean Blakeley</span>
-      <span class="tally"><b>4</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ir.png" alt="" loading="lazy"><span class="tname">Iran</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 0-0 vs Belgium</span>
-        </td>
-        <td class="odds">
-          800/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/jp.png" alt="" loading="lazy"><span class="tname">Japan</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 4-0 vs Tunisia</span>
-        </td>
-        <td class="odds">
-          45/1<span class="imp"> · 2.2%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/gb-eng.png" alt="" loading="lazy"><span class="tname">England</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 0-0 vs Ghana</span>
-        </td>
-        <td class="odds">
-          7/1<span class="imp"> · 12.5%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/nz.png" alt="" loading="lazy"><span class="tname">New Zealand</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 1-3 vs Egypt</span>
-        </td>
-        <td class="odds">
-          1000/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Shah Qureshi</span>
-      <span class="tally"><b>4</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/se.png" alt="" loading="lazy"><span class="tname">Sweden</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 1-5 vs Netherlands</span>
-        </td>
-        <td class="odds">
-          200/1<span class="imp"> · 0.5%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/kr.png" alt="" loading="lazy"><span class="tname">South Korea</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-1 vs South Africa</span>
-        </td>
-        <td class="odds">
-          429/1<span class="imp"> · 0.2%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/fr.png" alt="" loading="lazy"><span class="tname">France</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 3-0 vs Iraq</span>
-        </td>
-        <td class="odds">
-          4/1<span class="imp"> · 20.0%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/co.png" alt="" loading="lazy"><span class="tname">Colombia</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 1-0 vs Congo DR</span>
-        </td>
-        <td class="odds">
-          50/1<span class="imp"> · 2.0%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Simon Champion-McPherson</span>
-      <span class="tally"><b>3</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/at.png" alt="" loading="lazy"><span class="tname">Austria</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-2 vs Argentina</span>
-        </td>
-        <td class="odds">
-          200/1<span class="imp"> · 0.5%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/ar.png" alt="" loading="lazy"><span class="tname">Argentina</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 2-0 vs Austria</span>
-        </td>
-        <td class="odds">
-          6/1<span class="imp"> · 14.3%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team dead"><img class="flag" src="https://flagcdn.com/h20/pa.png" alt="" loading="lazy"><span class="tname">Panama</span></span></td>
-        <td><span class="pill out">out</span></td>
-        <td class="res">
-          <span class="L">L 0-1 vs Croatia</span>
-        </td>
-        <td class="odds">
-          —
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/de.png" alt="" loading="lazy"><span class="tname">Germany</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 2-1 vs Ivory Coast</span>
-        </td>
-        <td class="odds">
-          14/1<span class="imp"> · 6.7%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
-  <div class="person">
-    <div class="person-head">
-      <span class="name">Tom Reed</span>
-      <span class="tally"><b>4</b> of 4 still in</span>
-    </div>
-    <table>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/sn.png" alt="" loading="lazy"><span class="tname">Senegal</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 2-3 vs Norway</span>
-        </td>
-        <td class="odds">
-          150/1<span class="imp"> · 0.7%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/cd.png" alt="" loading="lazy"><span class="tname">Congo DR</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="L">L 0-1 vs Colombia</span>
-        </td>
-        <td class="odds">
-          999/1<span class="imp"> · 0.1%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/eg.png" alt="" loading="lazy"><span class="tname">Egypt</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="W">W 3-1 vs New Zealand</span>
-        </td>
-        <td class="odds">
-          250/1<span class="imp"> · 0.4%</span>
-        </td>
-      </tr>
-      
-      <tr>
-        <td><span class="team "><img class="flag" src="https://flagcdn.com/h20/cw.png" alt="" loading="lazy"><span class="tname">Curaçao</span></span></td>
-        <td><span class="pill in">in</span></td>
-        <td class="res">
-          <span class="D">D 0-0 vs Ecuador</span>
-        </td>
-        <td class="odds">
-          2500/1<span class="imp"> · 0.0%</span>
-        </td>
-      </tr>
-      
-    </table>
-  </div>
-  
 
   <div class="foot">
-    Results: football-data.org · Odds: the-odds-api.com (median across books, fractional · implied win %) · Flags: flagcdn.com<br>
+    Results &amp; fixtures: football-data.org · Odds: the-odds-api.com (median across books, fractional · implied win %) · Flags: flagcdn.com<br>
     A team drops to OUT when bookmakers remove it from the outright winner market.
   </div>
 </div>

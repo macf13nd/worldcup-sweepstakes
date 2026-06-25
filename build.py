@@ -70,45 +70,66 @@ def load_env():
 # ---------------------------------------------------------------------------
 # Data fetching
 # ---------------------------------------------------------------------------
-def fetch_results(key):
-    """Return {canon_team: {'text': 'W 2-0 vs Opp', 'date': iso, 'sort': dt}}.
+def fmt_date(iso):
+    """ISO timestamp -> short 'Sat 28 Jun'."""
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        return f"{dt:%a} {dt.day} {dt:%b}"
+    except Exception:  # noqa: BLE001
+        return ""
 
-    Keeps the most recent finished match per team.
+
+def fetch_matches(key):
+    """Return (results, fixtures, err).
+
+    results[canon_team]  = most recent FINISHED match: outcome / score / opp.
+    fixtures[canon_team] = next upcoming match: opponent + formatted date.
     """
     if not key:
-        return {}, "no FOOTBALL_DATA_KEY set"
+        return {}, {}, "no FOOTBALL_DATA_KEY set"
     try:
         r = requests.get(
-            f"{FD_BASE}/competitions/WC/matches?status=FINISHED",
+            f"{FD_BASE}/competitions/WC/matches",
             headers={"X-Auth-Token": key},
             timeout=30,
         )
         r.raise_for_status()
         matches = r.json().get("matches", [])
     except Exception as e:  # noqa: BLE001 - surface any failure on the page
-        return {}, f"football-data error: {e}"
+        return {}, {}, f"football-data error: {e}"
 
-    results = {}
+    results, fixtures = {}, {}
     for m in matches:
         home = m.get("homeTeam", {}).get("name") or ""
         away = m.get("awayTeam", {}).get("name") or ""
-        ft = (m.get("score") or {}).get("fullTime") or {}
-        hg, ag = ft.get("home"), ft.get("away")
-        if hg is None or ag is None:
-            continue
+        status = m.get("status", "")
         when = m.get("utcDate", "")
-        for team, opp, gf, ga in ((home, away, hg, ag), (away, home, ag, hg)):
-            outcome = "W" if gf > ga else "L" if gf < ga else "D"
-            entry = {
-                "text": f"{outcome} {gf}-{ga} vs {opp}",
-                "outcome": outcome,
-                "date": when,
-                "sort": when,
-            }
-            ck = canon(team)
-            if ck not in results or when > results[ck]["sort"]:
-                results[ck] = entry
-    return results, None
+
+        if status == "FINISHED":
+            ft = (m.get("score") or {}).get("fullTime") or {}
+            hg, ag = ft.get("home"), ft.get("away")
+            if hg is None or ag is None:
+                continue
+            for team, opp, gf, ga in ((home, away, hg, ag), (away, home, ag, hg)):
+                outcome = "W" if gf > ga else "L" if gf < ga else "D"
+                entry = {
+                    "outcome": outcome,
+                    "score": f"{gf}-{ga}",
+                    "opp": opp,
+                    "text": f"{outcome} {gf}-{ga} vs {opp}",
+                    "sort": when,
+                }
+                ck = canon(team)
+                if ck not in results or when > results[ck]["sort"]:
+                    results[ck] = entry
+
+        elif status in ("SCHEDULED", "TIMED") and when:
+            for team, opp in ((home, away), (away, home)):
+                ck = canon(team)
+                if ck not in fixtures or when < fixtures[ck]["sort"]:
+                    fixtures[ck] = {"opp": opp, "date": fmt_date(when), "sort": when}
+
+    return results, fixtures, None
 
 
 def fetch_odds(key):
@@ -183,7 +204,7 @@ def build():
     overrides_path = ROOT / "overrides.json"
     overrides = json.loads(overrides_path.read_text()) if overrides_path.exists() else {}
 
-    results, results_err = fetch_results(os.environ.get("FOOTBALL_DATA_KEY"))
+    results, fixtures, results_err = fetch_matches(os.environ.get("FOOTBALL_DATA_KEY"))
     odds, alive, odds_err = fetch_odds(os.environ.get("ODDS_API_KEY"))
     have_odds = alive is not None
 
@@ -194,6 +215,7 @@ def build():
             keys = keyset_for(team, aliases)
             res = lookup(keys, results)
             od = lookup(keys, odds)
+            fx = lookup(keys, fixtures)
 
             # Status: manual override wins; else odds-presence; else unknown
             ov = overrides.get(team, "").lower()
@@ -204,12 +226,18 @@ def build():
             else:
                 status = "unknown"
 
+            # No next fixture if the team is eliminated
+            show_next = fx and status != "out"
             teams.append({
                 "name": team,
                 "flag": flag_url(team, flags),
                 "status": status,
                 "result": res["text"] if res else "—",
                 "outcome": res["outcome"] if res else "",
+                "score": res["score"] if res else "",
+                "last_opp": res["opp"] if res else "",
+                "next_opp": fx["opp"] if show_next else None,
+                "next_date": fx["date"] if show_next else None,
                 "odds_decimal": od["decimal"] if od else None,
                 "odds_frac": to_fractional(od["decimal"]) if od else None,
                 "odds_implied": od["implied"] if od else None,
@@ -217,19 +245,19 @@ def build():
             })
 
         alive_count = sum(1 for t in teams if t["status"] == "in")
-        best = min((t["odds_decimal"] for t in teams if t["odds_decimal"]), default=None)
+        win_pct = sum(t["odds_implied"] for t in teams if t["odds_implied"])
         people.append({
             "name": person,
             "teams": teams,
             "alive": alive_count,
             "total": len(teams),
-            "best_odds": best,
+            "win_pct": round(win_pct, 1),
         })
 
-    # Leaderboard: most teams alive, then best (lowest) odds among them
+    # Leaderboard: highest combined win probability, then most teams alive
     leaderboard = sorted(
         people,
-        key=lambda p: (-p["alive"], p["best_odds"] if p["best_odds"] else 9999),
+        key=lambda p: (-p["win_pct"], -p["alive"]),
     )
 
     env = Environment(
