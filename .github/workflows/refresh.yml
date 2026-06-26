@@ -2,17 +2,21 @@ name: Refresh dashboard
 
 on:
   schedule:
-    # 06:23 UTC (~07:23 BST). Off the top-of-hour to dodge GitHub's congested
-    # scheduler queue (on-the-hour crons get delayed/dropped under load). Runs
-    # after overnight US fixtures wrap and before a typical morning check.
+    # Primary — 06:23 UTC (~07:23 BST). Off the top-of-hour to dodge GitHub's
+    # congested scheduler queue. Runs after overnight US fixtures wrap.
     - cron: "23 6 * * *"
+    # Fallback — 11:23 UTC (~12:23 BST). Only acts if the primary run didn't
+    # update today's snapshot (see the guard step); otherwise it self-skips, so
+    # it never triggers an extra same-day rebuild and the movement baseline is
+    # untouched.
+    - cron: "23 11 * * *"
   workflow_dispatch: {}    # manual "refresh now" button
 
 permissions:
   contents: write          # commit the regenerated page back to main
 
 concurrency:
-  group: refresh
+  group: refresh           # serialise runs so the fallback sees the primary's commit
   cancel-in-progress: false
 
 jobs:
@@ -21,20 +25,47 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Decide whether to run
+        id: guard
+        run: |
+          today="$(date -u +%F)"
+          event="${{ github.event_name }}"
+          sched="${{ github.event.schedule }}"
+          # Manual runs and the primary morning cron always proceed.
+          if [ "$event" != "schedule" ] || [ "$sched" != "23 11 * * *" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual or primary cron — proceeding."
+            exit 0
+          fi
+          # Fallback cron: run only if the morning run hasn't already written
+          # today's snapshot. current.date == today  =>  primary succeeded, skip.
+          last="$(jq -r '.current.date // ""' data/standings.json 2>/dev/null || echo "")"
+          if [ "$last" = "$today" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Snapshot already current for $today — primary ran; skipping fallback."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Snapshot stale (last='$last', today='$today') — primary missed; running fallback."
+          fi
+
       - uses: actions/setup-python@v6
+        if: steps.guard.outputs.run == 'true'
         with:
           python-version: "3.12"
 
       - name: Install deps
+        if: steps.guard.outputs.run == 'true'
         run: pip install -r requirements.txt
 
       - name: Build dashboard
+        if: steps.guard.outputs.run == 'true'
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: python build.py
 
       - name: Commit if changed
+        if: steps.guard.outputs.run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
