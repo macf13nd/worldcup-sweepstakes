@@ -64,12 +64,19 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: python build.py
 
+      - name: Build knockout bracket
+        if: steps.guard.outputs.run == 'true'
+        env:
+          FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python bracket.py
+
       - name: Commit if changed
         if: steps.guard.outputs.run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/index.html data/standings.json
+          git add docs/index.html docs/bracket.html data/standings.json
           if ! git diff --cached --quiet; then
             git commit -m "Refresh dashboard ($(date -u +%Y-%m-%dT%H:%MZ))"
             git push

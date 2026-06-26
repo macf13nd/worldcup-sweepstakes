@@ -1,0 +1,44 @@
+{
+  "_comment": "EDIT ME. Manually-maintained WC2026 knockout tree for the bracket page (bracket.py -> docs/bracket.html). Each match has a 'no' (the W-number shown on TV), a 'round' (0=R32,1=R16,2=QF,3=SF,4=Final) and a 'side' (L/R; final is C). Each of the two slots a/b is ONE of: {\"team\":\"Germany\"} (real team -> owner+flag+odds resolve automatically; spelling should match draw.json/flags.json), {\"seed\":\"2K\"} (group placeholder shown greyed), or {\"from\":\"m74\"} (winner of an earlier match -> shows 'W74'). Fill teams in as groups conclude. Known teams below are best-effort from the TV graphic — correct any against the official bracket.",
+  "rounds": ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"],
+  "matches": {
+    "m74": {"no": 74, "round": 0, "side": "L", "a": {"team": "Germany"}, "b": {"team": "France"}},
+    "m77": {"no": 77, "round": 0, "side": "L", "a": {"team": "South Africa"}, "b": {"team": "Canada"}},
+    "m73": {"no": 73, "round": 0, "side": "L", "a": {"team": "Netherlands"}, "b": {"team": "Morocco"}},
+    "m75": {"no": 75, "round": 0, "side": "L", "a": {"seed": "2K"}, "b": {"seed": "2L"}},
+    "m83": {"no": 83, "round": 0, "side": "L", "a": {"seed": "1H"}, "b": {"seed": "2J"}},
+    "m84": {"no": 84, "round": 0, "side": "L", "a": {"team": "United States"}, "b": {"team": "Bosnia and Herzegovina"}},
+    "m81": {"no": 81, "round": 0, "side": "L", "a": {"seed": "1G"}, "b": {"seed": "3rd"}},
+    "m82": {"no": 82, "round": 0, "side": "L", "a": {"seed": "TBD"}, "b": {"seed": "TBD"}},
+
+    "m76": {"no": 76, "round": 0, "side": "R", "a": {"team": "Brazil"}, "b": {"team": "Japan"}},
+    "m78": {"no": 78, "round": 0, "side": "R", "a": {"team": "Côte d'Ivoire"}, "b": {"team": "Norway"}},
+    "m79": {"no": 79, "round": 0, "side": "R", "a": {"team": "Mexico"}, "b": {"seed": "1L"}},
+    "m80": {"no": 80, "round": 0, "side": "R", "a": {"seed": "TBD"}, "b": {"seed": "3rd"}},
+    "m86": {"no": 86, "round": 0, "side": "R", "a": {"team": "Argentina"}, "b": {"team": "Australia"}},
+    "m88": {"no": 88, "round": 0, "side": "R", "a": {"seed": "TBD"}, "b": {"seed": "TBD"}},
+    "m85": {"no": 85, "round": 0, "side": "R", "a": {"team": "Switzerland"}, "b": {"seed": "1K"}},
+    "m87": {"no": 87, "round": 0, "side": "R", "a": {"seed": "TBD"}, "b": {"seed": "3rd"}},
+
+    "m89": {"no": 89, "round": 1, "side": "L", "a": {"from": "m74"}, "b": {"from": "m77"}},
+    "m90": {"no": 90, "round": 1, "side": "L", "a": {"from": "m73"}, "b": {"from": "m75"}},
+    "m93": {"no": 93, "round": 1, "side": "L", "a": {"from": "m83"}, "b": {"from": "m84"}},
+    "m94": {"no": 94, "round": 1, "side": "L", "a": {"from": "m81"}, "b": {"from": "m82"}},
+
+    "m91": {"no": 91, "round": 1, "side": "R", "a": {"from": "m76"}, "b": {"from": "m78"}},
+    "m92": {"no": 92, "round": 1, "side": "R", "a": {"from": "m79"}, "b": {"from": "m80"}},
+    "m95": {"no": 95, "round": 1, "side": "R", "a": {"from": "m86"}, "b": {"from": "m88"}},
+    "m96": {"no": 96, "round": 1, "side": "R", "a": {"from": "m85"}, "b": {"from": "m87"}},
+
+    "m97": {"no": 97, "round": 2, "side": "L", "a": {"from": "m89"}, "b": {"from": "m90"}},
+    "m98": {"no": 98, "round": 2, "side": "L", "a": {"from": "m93"}, "b": {"from": "m94"}},
+
+    "m99": {"no": 99, "round": 2, "side": "R", "a": {"from": "m91"}, "b": {"from": "m92"}},
+    "m100": {"no": 100, "round": 2, "side": "R", "a": {"from": "m95"}, "b": {"from": "m96"}},
+
+    "m101": {"no": 101, "round": 3, "side": "L", "a": {"from": "m97"}, "b": {"from": "m98"}},
+    "m102": {"no": 102, "round": 3, "side": "R", "a": {"from": "m99"}, "b": {"from": "m100"}},
+
+    "m104": {"no": 104, "round": 4, "side": "C", "a": {"from": "m101"}, "b": {"from": "m102"}}
+  }
+}

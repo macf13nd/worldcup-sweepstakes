@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Cup 2026 Sweepstakes — Knockout Bracket</title>
+<style>
+  /* Shared theme tokens — kept in sync with templates/dashboard.html */
+  :root {
+    --bg: #0f1419; --card: #1a2129; --line: #2a333d; --text: #e6edf3;
+    --muted: #8b97a3; --in: #3fb950; --out: #f85149; --accent: #ffd33d;
+    --groupbg: #11171d;
+    /* Bracket geometry */
+    --h: 92px;   /* match-card height */
+    --g: 18px;   /* base vertical gap between round-of-32 cards */
+    --c: 40px;   /* horizontal gap / connector length between columns */
+    --w: 186px;  /* match-card width */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+    /* Stadium trophy backdrop: a central spotlight keeps the trophy glowing
+       while the scrim darkens edges so cards stay legible. Fixed = atmosphere. */
+    background:
+      radial-gradient(82% 72% at 50% 25%, rgba(15,20,25,.40), rgba(15,20,25,.94) 78%),
+      url("assets/trophy-bg.jpg") center 22% / cover no-repeat fixed,
+      var(--bg);
+  }
+  .wrap { max-width: 2100px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 2px; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px;
+         text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+
+  /* View tabs (static links to the two pages — no JS) */
+  .tabs { display: flex; gap: 6px; margin: 0 0 8px; }
+  .tab { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+         text-decoration: none; color: var(--muted); background: rgba(26,33,41,.92);
+         border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .tab:hover { color: var(--text); border-color: var(--accent); }
+  .tab.active { color: #0f1419; background: var(--accent); border-color: var(--accent); }
+  .banner {
+    background: #3d2b00; border: 1px solid #6b4e00; color: var(--accent);
+    padding: 10px 14px; border-radius: 8px; margin: 16px 0; font-size: 13px;
+  }
+
+  /* Horizontal scroll wrapper — a bracket is inherently landscape */
+  .scroll { overflow-x: auto; padding: 20px 4px 8px; }
+  .bracket { display: flex; gap: var(--c); align-items: stretch;
+             width: max-content; margin: 0 auto; }
+
+  .col { display: flex; flex-direction: column; }
+  .col-head { text-align: center; font-size: 11px; text-transform: uppercase;
+              letter-spacing: .06em; color: var(--muted); font-weight: 600;
+              height: 22px; margin-bottom: 8px; }
+
+  /* Match card */
+  .match {
+    position: relative; width: var(--w); height: var(--h);
+    background: rgba(26,33,41,.92); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.45); backdrop-filter: blur(2px);
+    display: flex; flex-direction: column; flex: none;
+  }
+  .match.r0 { margin: calc(var(--g)/2) 0; }
+  .match.r1 { margin: calc(var(--h)/2 + var(--g)) 0;        --span: calc(var(--h) + var(--g)); }
+  .match.r2 { margin: calc(var(--h)*1.5 + var(--g)*2) 0;    --span: calc((var(--h) + var(--g))*2); }
+  .match.r3 { margin: calc(var(--h)*3.5 + var(--g)*4) 0;    --span: calc((var(--h) + var(--g))*4); }
+
+  .slot { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 9px; min-width: 0; }
+  .vs { height: 1px; background: var(--line); }
+  .flag { width: 22px; height: 16px; border-radius: 2px; object-fit: cover;
+          box-shadow: 0 0 0 1px rgba(255,255,255,.12); flex: none; }
+  .meta { flex: 1; min-width: 0; }
+  .tname { font-size: 13px; font-weight: 600; white-space: nowrap;
+           overflow: hidden; text-overflow: ellipsis; }
+  .owner { font-size: 10.5px; color: var(--muted); white-space: nowrap;
+           overflow: hidden; text-overflow: ellipsis; }
+  .prog { font-size: 13px; font-weight: 700; color: var(--accent);
+          font-variant-numeric: tabular-nums; flex: none; }
+  .slot.dead .tname { text-decoration: line-through; color: var(--muted); }
+  .slot.dead .flag { filter: grayscale(1) opacity(.55); }
+  .slot.ph { color: var(--muted); }
+  .ph-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
+
+  /* Connectors (pure CSS, geometry aligns because every column is the same height) */
+  .match.branch.side-l::before {
+    content: ''; position: absolute; top: 50%; right: calc(100% + var(--c)/2);
+    width: calc(var(--c)/2); height: var(--span); transform: translateY(-50%);
+    border: 2px solid var(--line); border-left: 0;
+  }
+  .match.branch.side-l::after {
+    content: ''; position: absolute; top: 50%; right: 100%;
+    width: calc(var(--c)/2); height: 2px; transform: translateY(-50%); background: var(--line);
+  }
+  .match.branch.side-r::before {
+    content: ''; position: absolute; top: 50%; left: calc(100% + var(--c)/2);
+    width: calc(var(--c)/2); height: var(--span); transform: translateY(-50%);
+    border: 2px solid var(--line); border-right: 0;
+  }
+  .match.branch.side-r::after {
+    content: ''; position: absolute; top: 50%; left: 100%;
+    width: calc(var(--c)/2); height: 2px; transform: translateY(-50%); background: var(--line);
+  }
+
+  /* Centre column: trophy floats above, the Final card sits dead-centre */
+  .center { display: flex; flex-direction: column; min-width: 210px; }
+  .center-body { flex: 1; position: relative; display: flex; flex-direction: column;
+                 align-items: center; justify-content: center; }
+  .trophy-wrap { position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+                 text-align: center; width: 200px; }
+  .trophy { width: 96px; height: auto; filter: drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+  .trophy-cap { margin-top: 6px; font-weight: 800; font-size: 13px; letter-spacing: .08em;
+                color: var(--accent); text-transform: uppercase; }
+  .trophy-sub { font-size: 10.5px; color: var(--muted); letter-spacing: .04em; }
+  .final-wrap { position: relative; text-align: center; }
+  .match.final { width: 196px; height: var(--h); border-color: var(--accent);
+                 box-shadow: 0 0 0 1px rgba(255,211,61,.25), 0 6px 18px rgba(0,0,0,.45); }
+  .match.final::before {
+    content: ''; position: absolute; top: 50%; right: 100%; width: var(--c); height: 2px;
+    background: var(--line);
+  }
+  .match.final::after {
+    content: ''; position: absolute; top: 50%; left: 100%; width: var(--c); height: 2px;
+    background: var(--line);
+  }
+  .final-cap { position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+               font-size: 11px; text-transform: uppercase;
+               letter-spacing: .08em; color: var(--muted); }
+
+  .legend { color: var(--muted); font-size: 12px; margin: 18px auto 0; max-width: 900px;
+            text-align: center; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 18px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏆 World Cup 2026 Sweepstakes — Knockout Bracket</h1>
+  <div class="sub">Updated 2026-06-26 22:09 UTC</div>
+
+  <div class="tabs">
+    <a class="tab" href="index.html">⚽ Leaderboard</a>
+    <a class="tab active" href="bracket.html">🏆 Bracket</a>
+  </div>
+
+  
+
+  
+
+  
+
+  <div class="scroll">
+    <div class="bracket">
+      
+      
+      <div class="col">
+        <div class="col-head">Round of 32</div>
+        
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/de.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Germany</div>
+        <div class="owner">Simon Champion-MacPherson</div>
+      </div>
+      <div class="prog">20%</div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/fr.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">France</div>
+        <div class="owner">Shah Qureshi</div>
+      </div>
+      <div class="prog">80%</div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/za.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">South Africa</div>
+        <div class="owner">Darren Cooney</div>
+      </div>
+      <div class="prog">20%</div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/ca.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Canada</div>
+        <div class="owner">Carmine Colicino</div>
+      </div>
+      <div class="prog">80%</div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/nl.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Netherlands</div>
+        <div class="owner">Adam Hollister</div>
+      </div>
+      <div class="prog">75%</div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/ma.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Morocco</div>
+        <div class="owner">Ryan Golds</div>
+      </div>
+      <div class="prog">25%</div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">2K</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">2L</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">1H</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">2J</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/us.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">United States</div>
+        <div class="owner">Chris McConney</div>
+      </div>
+      <div class="prog">97%</div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/ba.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Bosnia and Herzegovina</div>
+        <div class="owner">Dimitra Chaloglou</div>
+      </div>
+      <div class="prog">3%</div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">1G</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">3rd</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-l ">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">TBD</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">TBD</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+      <div class="col">
+        <div class="col-head">Round of 16</div>
+        
+  <div class="match r1 side-l branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W74</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W77</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r1 side-l branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W73</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W75</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r1 side-l branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W83</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W84</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r1 side-l branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W81</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W82</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+      <div class="col">
+        <div class="col-head">Quarter-finals</div>
+        
+  <div class="match r2 side-l branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W89</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W90</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r2 side-l branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W93</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W94</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+      <div class="col">
+        <div class="col-head">Semi-finals</div>
+        
+  <div class="match r3 side-l branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W97</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W98</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+
+      
+      <div class="col center">
+        <div class="col-head">Final</div>
+        <div class="center-body">
+          <div class="trophy-wrap">
+            <div class="trophy-cap">The Final</div>
+            <div class="trophy-sub">FIFA World Cup 2026<br>New York · New Jersey</div>
+          </div>
+          <div class="final-wrap">
+            
+            <div class="match final">
+              
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W101</span></div>
+    
+  </div>
+  
+              <div class="vs"></div>
+              
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W102</span></div>
+    
+  </div>
+  
+            </div>
+            
+            <div class="final-cap">Champions</div>
+          </div>
+        </div>
+      </div>
+
+      
+      
+      <div class="col">
+        <div class="col-head">Semi-finals</div>
+        
+  <div class="match r3 side-r branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W99</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W100</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+      <div class="col">
+        <div class="col-head">Quarter-finals</div>
+        
+  <div class="match r2 side-r branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W91</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W92</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r2 side-r branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W95</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W96</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+      <div class="col">
+        <div class="col-head">Round of 16</div>
+        
+  <div class="match r1 side-r branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W76</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W78</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r1 side-r branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W79</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W80</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r1 side-r branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W86</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W88</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r1 side-r branch">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W85</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">W87</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+      <div class="col">
+        <div class="col-head">Round of 32</div>
+        
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/br.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Brazil</div>
+        <div class="owner">Carmine Colicino</div>
+      </div>
+      <div class="prog">79%</div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/jp.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Japan</div>
+        <div class="owner">Sean Blakeley</div>
+      </div>
+      <div class="prog">21%</div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/ci.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Côte d&#39;Ivoire</div>
+        <div class="owner">Georgia Cottle</div>
+      </div>
+      <div class="prog">16%</div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/no.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Norway</div>
+        <div class="owner">Adam Hollister</div>
+      </div>
+      <div class="prog">84%</div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/mx.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Mexico</div>
+        <div class="owner">Dimitra Chaloglou</div>
+      </div>
+      
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">1L</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">TBD</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">3rd</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/ar.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Argentina</div>
+        <div class="owner">Simon Champion-MacPherson</div>
+      </div>
+      <div class="prog">97%</div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/au.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Australia</div>
+        <div class="owner">Georgia Cottle</div>
+      </div>
+      <div class="prog">3%</div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">TBD</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">TBD</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ">
+    
+      <img class="flag" src="https://flagcdn.com/h20/ch.png" alt="" loading="lazy">
+      <div class="meta">
+        <div class="tname">Switzerland</div>
+        <div class="owner">Darren Cooney</div>
+      </div>
+      
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">1K</span></div>
+    
+  </div>
+  
+  </div>
+  
+  <div class="match r0 side-r ">
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">TBD</span></div>
+    
+  </div>
+  
+    <div class="vs"></div>
+    
+  <div class="slot  ph">
+    
+      <div class="meta"><span class="ph-label">3rd</span></div>
+    
+  </div>
+  
+  </div>
+  
+      </div>
+      
+    </div>
+  </div>
+
+  <div class="legend">
+    Each card shows the team, its sweepstakes owner, and — for Round-of-32 ties with two known
+    teams — the chance to progress (derived head-to-head from outright odds, so the pair sums to 100%).
+    Greyed slots are still-to-be-decided qualifiers; <b>W74</b> means “winner of match 74”.
+  </div>
+  <div class="foot">
+    Odds: the-odds-api.com (outright winner, median across books) · Flags: flagcdn.com · Draw: sweepstakes
+  </div>
+</div>
+</body>
+</html>

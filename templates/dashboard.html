@@ -18,7 +18,15 @@
   }
   .wrap { max-width: 820px; margin: 0 auto; }
   h1 { font-size: 22px; margin: 0 0 2px; }
-  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+
+  /* View tabs (static links to the two pages — no JS) */
+  .tabs { display: flex; gap: 6px; margin: 0 0 24px; }
+  .tab { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+         text-decoration: none; color: var(--muted); background: var(--card);
+         border: 1px solid var(--line); }
+  .tab:hover { color: var(--text); border-color: var(--accent); }
+  .tab.active { color: #0f1419; background: var(--accent); border-color: var(--accent); }
   .banner {
     background: #3d2b00; border: 1px solid #6b4e00; color: var(--accent);
     padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;
@@ -109,6 +117,11 @@
 <div class="wrap">
   <h1>⚽ World Cup 2026 Sweepstakes</h1>
   <div class="sub">Updated {{ updated }} · refreshes daily</div>
+
+  <div class="tabs">
+    <a class="tab active" href="index.html">⚽ Leaderboard</a>
+    <a class="tab" href="bracket.html">🏆 Bracket</a>
+  </div>
 
   {% if not have_odds or not have_results %}
   <div class="banner">
