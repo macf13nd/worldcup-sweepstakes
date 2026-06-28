@@ -80,6 +80,13 @@
           font-variant-numeric: tabular-nums; flex: none; }
   .slot.dead .tname { text-decoration: line-through; color: var(--muted); }
   .slot.dead .flag { filter: grayscale(1) opacity(.55); }
+  .slot.dead { opacity: .65; }
+  .slot.win .tname { color: var(--in); }
+  .prog.tick { color: var(--in); }
+  .vs { height: 1px; background: var(--line); position: relative; }
+  .vs .score { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+               background: var(--card); padding: 0 6px; font-size: 11px; font-weight: 700;
+               color: var(--accent); font-variant-numeric: tabular-nums; }
   .slot.ph { color: var(--muted); }
   .ph-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
 
@@ -143,23 +150,24 @@
     <a class="tab active" href="bracket.html">🏆 Bracket</a>
   </div>
 
-  {% if not have_odds %}
+  {% if not have_fixtures or not have_odds %}
   <div class="banner">
-    Live odds not available yet{% if errors %} ({{ errors | join("; ") }}){% endif %} —
-    progress percentages appear once the odds feed is connected. The bracket structure
-    still renders; edit <code>bracket.json</code> to fill teams in as groups conclude.
+    Live data partly unavailable{% if errors %} ({{ errors | join("; ") }}){% endif %} —
+    teams fill in from the fixtures feed and the chance-to-advance from the match-odds feed as each
+    becomes available.
   </div>
   {% endif %}
 
   {% macro slotrow(s) %}
-  <div class="slot {{ 'dead' if s.status == 'out' else '' }} {{ 'ph' if s.kind != 'team' else '' }}">
+  <div class="slot {{ 'dead' if s.dead else '' }} {{ 'win' if s.won else '' }} {{ 'ph' if s.kind != 'team' else '' }}">
     {% if s.kind == 'team' %}
       {% if s.flag %}<img class="flag" src="{{ s.flag }}" alt="" loading="lazy">{% endif %}
       <div class="meta">
         <div class="tname">{{ s.label }}</div>
         {% if s.owner %}<div class="owner">{{ s.owner }}</div>{% endif %}
       </div>
-      {% if s.progress is not none %}<div class="prog">{{ s.progress }}%</div>{% endif %}
+      {% if s.progress is not none %}<div class="prog">{{ s.progress }}%</div>
+      {% elif s.won %}<div class="prog tick">✓</div>{% endif %}
     {% else %}
       <div class="meta"><span class="ph-label">{{ s.label }}</span></div>
     {% endif %}
@@ -169,7 +177,7 @@
   {% macro card(m, side) %}
   <div class="match r{{ m.round }} side-{{ side }} {{ 'branch' if m.round > 0 else '' }}">
     {{ slotrow(m.a) }}
-    <div class="vs"></div>
+    <div class="vs">{% if m.score %}<span class="score">{{ m.score }}</span>{% endif %}</div>
     {{ slotrow(m.b) }}
   </div>
   {% endmacro %}
@@ -196,7 +204,7 @@
             {% if final %}
             <div class="match final">
               {{ slotrow(final.a) }}
-              <div class="vs"></div>
+              <div class="vs">{% if final.score %}<span class="score">{{ final.score }}</span>{% endif %}</div>
               {{ slotrow(final.b) }}
             </div>
             {% endif %}
@@ -216,12 +224,12 @@
   </div>
 
   <div class="legend">
-    Each card shows the team, its sweepstakes owner, and — for Round-of-32 ties with two known
-    teams — the chance to progress (derived head-to-head from outright odds, so the pair sums to 100%).
-    Greyed slots are still-to-be-decided qualifiers; <b>W74</b> means “winner of match 74”.
+    Each card shows the live matchup, the sweepstakes owner, and the <b>chance to advance</b> from
+    real head-to-head match odds (the pair sums to 100%). Finished ties show the score with the winner
+    in green; <b>W74</b> means “winner of match 74” for ties not yet decided.
   </div>
   <div class="foot">
-    Odds: the-odds-api.com (outright winner, median across books) · Flags: flagcdn.com · Draw: sweepstakes
+    Fixtures &amp; results: football-data.org · Match odds: the-odds-api.com (h2h, median across books) · Flags: flagcdn.com · Draw: sweepstakes
   </div>
 </div>
 </body>
