@@ -94,13 +94,15 @@ def _record(m):
 
 
 def fetch_knockout(key):
-    """Return (by_no, all_records, err).
+    """Return (ro32_records, all_records, err).
 
-    by_no       — {match_no: record} for the Round of 32 (chronological → 73-88).
-    all_records — every knockout record (used to match later rounds by team identity).
+    ro32_records — the 16 Round-of-32 records (match number assigned later from
+                   group positions, NOT kickoff order — FIFA numbers don't follow
+                   the schedule).
+    all_records  — every knockout record (later rounds match by team identity).
     """
     if not key:
-        return {}, [], "no FOOTBALL_DATA_KEY set"
+        return [], [], "no FOOTBALL_DATA_KEY set"
     try:
         r = requests.get(
             f"{FD_BASE}/competitions/WC/matches",
@@ -110,22 +112,73 @@ def fetch_knockout(key):
         r.raise_for_status()
         matches = r.json().get("matches", [])
     except Exception as e:  # noqa: BLE001
-        return {}, [], f"football-data error: {e}"
+        return [], [], f"football-data error: {e}"
 
-    by_stage = defaultdict(list)
+    ro32, all_records = [], []
     for m in matches:
-        if m.get("stage") in STAGE_NOS:
-            by_stage[m["stage"]].append(m)
+        stage = m.get("stage")
+        if stage not in STAGE_NOS:
+            continue
+        rec = _record(m)
+        all_records.append(rec)
+        if stage == "LAST_32":
+            ro32.append(rec)
+    return ro32, all_records, None
 
-    by_no, all_records = {}, []
-    for stage, nos in STAGE_NOS.items():
-        ms = sorted(by_stage.get(stage, []), key=lambda x: x.get("utcDate") or "")
-        for no, m in zip(nos, ms):
-            rec = _record(m)
-            all_records.append(rec)
-            if stage == "LAST_32":
-                by_no[no] = rec
-    return by_no, all_records, None
+
+def fetch_standings(key):
+    """canon(team) -> (group_letter, rank). Used to place R32 ties by group position."""
+    if not key:
+        return {}, "no FOOTBALL_DATA_KEY set"
+    try:
+        r = requests.get(
+            f"{FD_BASE}/competitions/WC/standings",
+            headers={"X-Auth-Token": key},
+            timeout=30,
+        )
+        r.raise_for_status()
+        groups = r.json().get("standings", [])
+    except Exception as e:  # noqa: BLE001
+        return {}, f"football-data standings error: {e}"
+
+    pos = {}
+    for g in groups:
+        grp = (g.get("group") or "").split()[-1]  # "Group A" -> "A"
+        for row in g.get("table", []):
+            name = (row.get("team") or {}).get("name")
+            if name and grp:
+                pos[build.canon(name)] = (grp, row.get("position"))
+    return pos, None
+
+
+# Official FIFA 2026 R32 pairings — the definite (Winner/Runner-up) slot(s) per
+# match number. The other side (where omitted) is a 3rd-placed team, which the
+# group-position lookup treats as a wildcard. Source: Wikipedia knockout bracket.
+DEFINITE_SLOTS = {
+    73: {"RU_A", "RU_B"}, 74: {"W_E"}, 75: {"W_F", "RU_C"}, 76: {"W_C", "RU_F"},
+    77: {"W_I"}, 78: {"RU_E", "RU_I"}, 79: {"W_A"}, 80: {"W_L"},
+    81: {"W_D"}, 82: {"W_G"}, 83: {"RU_K", "RU_L"}, 84: {"W_H", "RU_J"},
+    85: {"W_B"}, 86: {"W_J", "RU_H"}, 87: {"W_K"}, 88: {"RU_D", "RU_G"},
+}
+_DEF_BY_SET = {frozenset(v): n for n, v in DEFINITE_SLOTS.items()}
+
+
+def assign_ro32_numbers(records, positions):
+    """{match_no: record}, mapping each R32 tie to its FIFA number via group slots."""
+    by_no = {}
+    for rec in records:
+        labels = set()
+        for nm in (rec.get("home"), rec.get("away")):
+            grp, rank = positions.get(build.canon(nm or ""), (None, None))
+            if rank == 1:
+                labels.add(f"W_{grp}")
+            elif rank == 2:
+                labels.add(f"RU_{grp}")
+            # rank 3 (or unknown) is a wildcard 3rd-placed slot — ignore
+        no = _DEF_BY_SET.get(frozenset(labels))
+        if no:
+            by_no[no] = rec
+    return by_no
 
 
 def advance_pcts(prices):
@@ -270,7 +323,10 @@ def build_bracket():
     matches = {k: v for k, v in spec["matches"].items() if not k.startswith("_")}
 
     rev = reverse_alias(draw, aliases)
-    fd_by_no, fd_all, fd_err = fetch_knockout(os.environ.get("FOOTBALL_DATA_KEY"))
+    fd_key = os.environ.get("FOOTBALL_DATA_KEY")
+    ro32, fd_all, fd_err = fetch_knockout(fd_key)
+    positions, st_err = fetch_standings(fd_key)
+    fd_by_no = assign_ro32_numbers(ro32, positions)
     events, odds_err = fetch_h2h(os.environ.get("ODDS_API_KEY"))
 
     # Index live data by team identity (robust) and by kickoff time (R32 fallback).
@@ -317,7 +373,7 @@ def build_bracket():
         "left": left, "right": right, "final": final,
         "updated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "have_odds": bool(events), "have_fixtures": bool(fd_all),
-        "errors": [e for e in (fd_err, odds_err) if e],
+        "errors": [e for e in (fd_err, st_err, odds_err) if e],
     })
     out = ROOT / "docs" / "bracket.html"
     out.write_text(html)
