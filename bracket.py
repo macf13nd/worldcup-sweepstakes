@@ -5,19 +5,22 @@ A purely additive, standalone companion to build.py — it does NOT touch the ma
 dashboard pipeline. It reuses build.py's pure helpers by import.
 
 Data is pulled LIVE; nothing about teams/results/odds is hand-maintained:
-  * Fixtures, results & scores  — football-data.org (competitions/WC/matches).
-    Each knockout stage is sorted by kickoff time and assigned official FIFA match
-    numbers ascending (73-88 R32, 89-96 R16, 97-100 QF, 101-102 SF, 104 Final);
-    the fixed bracket wiring lives in bracket.json.
-  * Matchups & odds — the-odds-api `soccer_fifa_world_cup` h2h market, matched to
-    each tie by kickoff time. The 3-way (home/draw/away) price becomes an
-    "advance %" = normalised P(win) + P(draw)/2, so the pair sums to 100.
-  * Owners come from draw.json, flags from flags.json; API team-name variants are
-    resolved to our spellings via aliases.json (reverse index).
+  * Fixtures, results & scores — football-data.org (competitions/WC/matches).
+    Round-of-32 ties are placed by sorting that stage by kickoff and assigning
+    FIFA match numbers (73-88); the fixed bracket wiring lives in bracket.json.
+  * Winners are propagated forward by US (via the wiring) the moment a tie
+    finishes — we do NOT wait for the feed to advance the next-round fixture
+    (which lags). Round-of-16+ results/odds are then matched by TEAM IDENTITY,
+    not by match number (the feed's same-day numbering can't be assumed).
+  * Matchups & odds — the-odds-api `soccer_fifa_world_cup` h2h market. The 3-way
+    price becomes an "advance %" = normalised P(win) + P(draw)/2 (sums to 100).
+  * Owners from draw.json, flags from flags.json; API name variants resolved to
+    our spellings via aliases.json (reverse index).
 
 Run locally with `.venv/bin/python bracket.py`. Degrades gracefully with no keys.
 """
 
+import json
 import os
 import statistics
 from collections import defaultdict
@@ -28,7 +31,6 @@ import requests
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import build  # reuse helpers only — importing runs no network code (guarded by __main__)
-import json
 
 ROOT = Path(__file__).parent
 FD_BASE = "https://api.football-data.org/v4"
@@ -64,13 +66,41 @@ def owner_index(draw):
     return {team: owner for owner, teams in draw.items() for team in teams}
 
 
+def our_name(name, rev):
+    """Resolve any team spelling to our canonical (draw) spelling."""
+    return rev.get(build.canon(name), name) if name else name
+
+
+def team_key(a, b, rev):
+    """Stable key for a tie, independent of home/away order or spelling."""
+    return frozenset({build.canon(our_name(a, rev)), build.canon(our_name(b, rev))})
+
+
 # ---------------------------------------------------------------------------
 # Live data
 # ---------------------------------------------------------------------------
+def _record(m):
+    score = m.get("score") or {}
+    ft = score.get("fullTime") or {}
+    return {
+        "home": (m.get("homeTeam") or {}).get("name"),
+        "away": (m.get("awayTeam") or {}).get("name"),
+        "hg": ft.get("home"), "ag": ft.get("away"),
+        "status": m.get("status"),
+        "winner": score.get("winner"),  # HOME_TEAM / AWAY_TEAM / DRAW / None
+        "utcDate": m.get("utcDate"),
+        "date": build.fmt_date(m.get("utcDate", "")),
+    }
+
+
 def fetch_knockout(key):
-    """{match_no: {home, away, status, winner, score, utcDate, date}} from football-data."""
+    """Return (by_no, all_records, err).
+
+    by_no       — {match_no: record} for the Round of 32 (chronological → 73-88).
+    all_records — every knockout record (used to match later rounds by team identity).
+    """
     if not key:
-        return {}, "no FOOTBALL_DATA_KEY set"
+        return {}, [], "no FOOTBALL_DATA_KEY set"
     try:
         r = requests.get(
             f"{FD_BASE}/competitions/WC/matches",
@@ -80,37 +110,26 @@ def fetch_knockout(key):
         r.raise_for_status()
         matches = r.json().get("matches", [])
     except Exception as e:  # noqa: BLE001
-        return {}, f"football-data error: {e}"
+        return {}, [], f"football-data error: {e}"
 
     by_stage = defaultdict(list)
     for m in matches:
         if m.get("stage") in STAGE_NOS:
             by_stage[m["stage"]].append(m)
 
-    out = {}
+    by_no, all_records = {}, []
     for stage, nos in STAGE_NOS.items():
         ms = sorted(by_stage.get(stage, []), key=lambda x: x.get("utcDate") or "")
         for no, m in zip(nos, ms):
-            score = m.get("score") or {}
-            ft = score.get("fullTime") or {}
-            hg, ag = ft.get("home"), ft.get("away")
-            out[no] = {
-                "home": (m.get("homeTeam") or {}).get("name"),
-                "away": (m.get("awayTeam") or {}).get("name"),
-                "status": m.get("status"),
-                "winner": score.get("winner"),  # HOME_TEAM / AWAY_TEAM / DRAW / None
-                "score": f"{hg}–{ag}" if hg is not None and ag is not None else None,
-                "utcDate": m.get("utcDate"),
-                "date": build.fmt_date(m.get("utcDate", "")),
-            }
-    return out, None
+            rec = _record(m)
+            all_records.append(rec)
+            if stage == "LAST_32":
+                by_no[no] = rec
+    return by_no, all_records, None
 
 
 def advance_pcts(prices):
-    """3-way decimal prices {name|'Draw': dec} -> {canon_team: advance %} summing to 100.
-
-    De-vig by normalising implied probabilities, then split the draw evenly
-    (knockouts can't draw, so a draw resolves 50/50 in expectation)."""
+    """3-way decimal prices {name|'Draw': dec} -> {canon_team: advance %} summing to 100."""
     impl = {k: 1.0 / v for k, v in prices.items() if v}
     s = sum(impl.values()) or 1.0
     impl = {k: v / s for k, v in impl.items()}
@@ -122,9 +141,9 @@ def advance_pcts(prices):
 
 
 def fetch_h2h(key):
-    """{utc_minute: {home, away, adv:{canon_team: %}}} from the-odds-api h2h market."""
+    """Return (events, err); each event {home, away, adv:{canon: %}, commence}."""
     if not key:
-        return {}, "no ODDS_API_KEY set"
+        return [], "no ODDS_API_KEY set"
     try:
         r = requests.get(
             f"{ODDS_BASE}/sports/soccer_fifa_world_cup/odds",
@@ -134,9 +153,9 @@ def fetch_h2h(key):
         r.raise_for_status()
         events = r.json()
     except Exception as e:  # noqa: BLE001
-        return {}, f"the-odds-api error: {e}"
+        return [], f"the-odds-api error: {e}"
 
-    out = {}
+    out = []
     for e in events:
         prices = defaultdict(list)
         for book in e.get("bookmakers", []):
@@ -147,20 +166,19 @@ def fetch_h2h(key):
                     if isinstance(o.get("price"), (int, float)) and o["price"] > 0:
                         prices[o["name"]].append(float(o["price"]))
         med = {k: statistics.median(v) for k, v in prices.items() if v}
-        out[e["commence_time"][:16]] = {
-            "home": e.get("home_team"),
-            "away": e.get("away_team"),
-            "adv": advance_pcts(med),
-        }
+        out.append({
+            "home": e.get("home_team"), "away": e.get("away_team"),
+            "adv": advance_pcts(med), "commence": (e.get("commence_time") or "")[:16],
+        })
     return out, None
 
 
 # ---------------------------------------------------------------------------
 # Assembly
 # ---------------------------------------------------------------------------
-def teams_for(fd, ev):
-    """Resolve the two team names for a tie, filling gaps from the odds feed."""
-    h, a = fd.get("home"), fd.get("away")
+def teams_for(rec, ev):
+    """Resolve a tie's two team names from the fixtures rec, filling gaps from odds."""
+    h, a = rec.get("home"), rec.get("away")
     if ev:
         oh, oa = ev.get("home"), ev.get("away")
         if not h and not a:
@@ -172,43 +190,65 @@ def teams_for(fd, ev):
     return h, a
 
 
-def make_slot(name, pos, spec, fd, ev, ctx):
-    """Build one render-ready slot (a team, a 'winner of Wxx', or TBD)."""
-    if name:
-        our = ctx["rev"].get(build.canon(name), name)
-        slot = {
-            "kind": "team", "label": our,
-            "owner": ctx["owner"].get(our),
-            "flag": build.flag_url(our, ctx["flags"]),
-            "progress": None, "dead": False, "won": False,
-        }
-        finished = fd.get("status") == "FINISHED"
-        winner = fd.get("winner")
-        if finished and winner in ("HOME_TEAM", "AWAY_TEAM"):
-            won = (winner == "HOME_TEAM") == (pos == "a")
-            slot["won"], slot["dead"] = won, not won
-        elif ev:
-            slot["progress"] = ev["adv"].get(build.canon(our))
-        return slot
+def team_slot(name, rec, ev, ctx):
+    our = our_name(name, ctx["rev"])
+    slot = {
+        "kind": "team", "label": our,
+        "owner": ctx["owner"].get(our),
+        "flag": build.flag_url(our, ctx["flags"]),
+        "progress": None, "won": False, "dead": False,
+    }
+    if rec and rec.get("status") == "FINISHED" and rec.get("winner") in ("HOME_TEAM", "AWAY_TEAM"):
+        win_name = rec["home"] if rec["winner"] == "HOME_TEAM" else rec["away"]
+        won = build.canon(our) == build.canon(our_name(win_name, ctx["rev"]))
+        slot["won"], slot["dead"] = won, not won
+    elif ev:
+        slot["progress"] = ev["adv"].get(build.canon(our))
+    return slot
 
+
+def from_slot(spec, pos, ctx):
     sub = spec.get(pos) or {}
     if "from" in sub:
-        child = ctx["matches"][sub["from"]]
-        return {"kind": "from", "label": f"W{child['no']}"}
+        return {"kind": "from", "label": f'W{ctx["matches"][sub["from"]]["no"]}'}
     return {"kind": "tbd", "label": "TBD"}
 
 
-def resolve_match(key, spec, ctx):
-    fd = ctx["fd"].get(spec["no"], {})
-    ev = ctx["odds"].get(fd.get("utcDate", "")[:16]) if fd.get("utcDate") else None
-    home, away = teams_for(fd, ev)
-    return {
-        "id": key, "no": spec["no"], "round": spec["round"], "side": spec["side"],
-        "score": fd.get("score"), "date": fd.get("date"),
-        "finished": fd.get("status") == "FINISHED",
-        "a": make_slot(home, "a", spec, fd, ev, ctx),
-        "b": make_slot(away, "b", spec, fd, ev, ctx),
-    }
+def resolve(key, spec, ctx, winners):
+    """Resolve one match -> (render dict, winning-team-name or None)."""
+    rnd = spec["round"]
+    if rnd == 0:
+        rec = ctx["fd_by_no"].get(spec["no"], {})
+        ev0 = ctx["odds_time"].get((rec.get("utcDate") or "")[:16])
+        home, away = teams_for(rec, ev0)
+    else:
+        home = winners.get((spec.get("a") or {}).get("from"))
+        away = winners.get((spec.get("b") or {}).get("from"))
+        rec = ctx["fd_teams"].get(team_key(home, away, ctx["rev"]), {}) if home and away else {}
+
+    ev = None
+    if home and away:
+        ev = ctx["odds_teams"].get(team_key(home, away, ctx["rev"]))
+    elif rnd == 0:
+        ev = ctx["odds_time"].get((rec.get("utcDate") or "")[:16])
+
+    a = team_slot(home, rec, ev, ctx) if home else from_slot(spec, "a", ctx)
+    b = team_slot(away, rec, ev, ctx) if away else from_slot(spec, "b", ctx)
+
+    # Score, oriented to our a/b order (rec may list teams the other way round).
+    score = None
+    if rec and rec.get("hg") is not None and rec.get("ag") is not None and home and away:
+        a_is_home = build.canon(our_name(home, ctx["rev"])) == build.canon(our_name(rec["home"], ctx["rev"]))
+        score = f'{rec["hg"]}–{rec["ag"]}' if a_is_home else f'{rec["ag"]}–{rec["hg"]}'
+
+    wname = None
+    if rec and rec.get("winner") in ("HOME_TEAM", "AWAY_TEAM"):
+        wn = rec["home"] if rec["winner"] == "HOME_TEAM" else rec["away"]
+        wname = our_name(wn, ctx["rev"])
+
+    m = {"id": key, "no": spec["no"], "round": rnd, "side": spec["side"],
+         "a": a, "b": b, "score": score, "date": (rec or {}).get("date")}
+    return m, wname
 
 
 def render_page(ctx_template):
@@ -230,23 +270,36 @@ def build_bracket():
     matches = {k: v for k, v in spec["matches"].items() if not k.startswith("_")}
 
     rev = reverse_alias(draw, aliases)
-    fd, fd_err = fetch_knockout(os.environ.get("FOOTBALL_DATA_KEY"))
-    odds, odds_err = fetch_h2h(os.environ.get("ODDS_API_KEY"))
+    fd_by_no, fd_all, fd_err = fetch_knockout(os.environ.get("FOOTBALL_DATA_KEY"))
+    events, odds_err = fetch_h2h(os.environ.get("ODDS_API_KEY"))
 
-    # Re-key each event's advance% to OUR canonical team names, so a slot named
-    # "United States" matches an odds outcome named "USA" (etc.) via aliases.
-    for ev in odds.values():
-        ev["adv"] = {build.canon(rev.get(ck, ck)): v for ck, v in ev["adv"].items()}
+    # Index live data by team identity (robust) and by kickoff time (R32 fallback).
+    fd_teams = {
+        team_key(r["home"], r["away"], rev): r
+        for r in fd_all if r.get("home") and r.get("away")
+    }
+    odds_teams, odds_time = {}, {}
+    for ev in events:
+        ev["adv"] = {build.canon(our_name(name, rev)): v for name, v in ev["adv"].items()}
+        odds_time[ev["commence"]] = ev
+        if ev.get("home") and ev.get("away"):
+            odds_teams[team_key(ev["home"], ev["away"], rev)] = ev
 
     ctx = {
-        "rev": rev,
-        "owner": owner_index(draw),
-        "flags": flags,
-        "fd": fd,
-        "odds": odds,
-        "matches": matches,
+        "rev": rev, "owner": owner_index(draw), "flags": flags, "matches": matches,
+        "fd_by_no": fd_by_no, "fd_teams": fd_teams,
+        "odds_teams": odds_teams, "odds_time": odds_time,
     }
-    built = {k: resolve_match(k, s, ctx) for k, s in matches.items()}
+
+    # Resolve round by round so each tie's winner propagates forward immediately.
+    built, winners = {}, {}
+    for rnd in range(5):
+        for key, mspec in matches.items():
+            if mspec["round"] != rnd:
+                continue
+            m, wname = resolve(key, mspec, ctx, winners)
+            built[key] = m
+            winners[key] = wname
 
     left = [[] for _ in range(4)]
     right = [[] for _ in range(4)]
@@ -261,12 +314,9 @@ def build_bracket():
 
     html = render_page({
         "round_names": spec["rounds"][:4],
-        "left": left,
-        "right": right,
-        "final": final,
+        "left": left, "right": right, "final": final,
         "updated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-        "have_odds": bool(odds),
-        "have_fixtures": bool(fd),
+        "have_odds": bool(events), "have_fixtures": bool(fd_all),
         "errors": [e for e in (fd_err, odds_err) if e],
     })
     out = ROOT / "docs" / "bracket.html"
