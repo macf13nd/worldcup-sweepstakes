@@ -6,12 +6,16 @@ dashboard pipeline. It reuses build.py's pure helpers by import.
 
 Data is pulled LIVE; nothing about teams/results/odds is hand-maintained:
   * Fixtures, results & scores — football-data.org (competitions/WC/matches).
-    Round-of-32 ties are placed by sorting that stage by kickoff and assigning
-    FIFA match numbers (73-88); the fixed bracket wiring lives in bracket.json.
+    Round-of-32 ties are placed by GROUP STANDINGS, not kickoff order: each tie
+    is mapped to its FIFA match number (73-88) via the official Winner/Runner-up
+    group slots (assign_ro32_numbers + DEFINITE_SLOTS). The fixed bracket wiring
+    lives in bracket.json.
   * Winners are propagated forward by US (via the wiring) the moment a tie
     finishes — we do NOT wait for the feed to advance the next-round fixture
     (which lags). Round-of-16+ results/odds are then matched by TEAM IDENTITY,
-    not by match number (the feed's same-day numbering can't be assumed).
+    not by match number (the feed's same-day numbering can't be assumed). A tie's
+    winner is resolved by winner_side() — robust to penalty shootouts, where the
+    feed can report a non-decisive score.winner.
   * Matchups & odds — the-odds-api `soccer_fifa_world_cup` h2h market. The 3-way
     price becomes an "advance %" = normalised P(win) + P(draw)/2 (sums to 100).
   * Owners from draw.json, flags from flags.json; API name variants resolved to
@@ -36,7 +40,8 @@ ROOT = Path(__file__).parent
 FD_BASE = "https://api.football-data.org/v4"
 ODDS_BASE = "https://api.the-odds-api.com/v4"
 
-# Official FIFA match numbers per knockout stage, in chronological (kickoff) order.
+# Knockout stages we care about -> their FIFA match-number ranges (informational;
+# R32 ties are placed by group standings, not by these numbers — see assign_ro32_numbers).
 STAGE_NOS = {
     "LAST_32": list(range(73, 89)),
     "LAST_16": list(range(89, 97)),
