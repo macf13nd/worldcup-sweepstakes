@@ -82,15 +82,40 @@ def team_key(a, b, rev):
 def _record(m):
     score = m.get("score") or {}
     ft = score.get("fullTime") or {}
+    pen = score.get("penalties") or {}
     return {
         "home": (m.get("homeTeam") or {}).get("name"),
         "away": (m.get("awayTeam") or {}).get("name"),
         "hg": ft.get("home"), "ag": ft.get("away"),
+        "ph": pen.get("home"), "pa": pen.get("away"),  # shootout goals only
+        "duration": score.get("duration"),  # REGULAR / EXTRA_TIME / PENALTY_SHOOTOUT
         "status": m.get("status"),
         "winner": score.get("winner"),  # HOME_TEAM / AWAY_TEAM / DRAW / None
         "utcDate": m.get("utcDate"),
         "date": build.fmt_date(m.get("utcDate", "")),
     }
+
+
+def winner_side(rec):
+    """Resolve the winning side of a FINISHED tie: 'HOME_TEAM' / 'AWAY_TEAM' / None.
+
+    score.winner is the source of truth, but for penalty shootouts the feed can
+    return DRAW/None even though the tie was decided. Fall back to the penalty
+    sub-score, then to a decisive fullTime (which, per the football-data API,
+    already includes shootout goals — so a shootout always leaves it decisive).
+    """
+    if not rec or rec.get("status") != "FINISHED":
+        return None
+    w = rec.get("winner")
+    if w in ("HOME_TEAM", "AWAY_TEAM"):
+        return w
+    ph, pa = rec.get("ph"), rec.get("pa")
+    if ph is not None and pa is not None and ph != pa:
+        return "HOME_TEAM" if ph > pa else "AWAY_TEAM"
+    hg, ag = rec.get("hg"), rec.get("ag")
+    if hg is not None and ag is not None and hg != ag:
+        return "HOME_TEAM" if hg > ag else "AWAY_TEAM"
+    return None
 
 
 def fetch_knockout(key):
@@ -251,8 +276,9 @@ def team_slot(name, rec, ev, ctx):
         "flag": build.flag_url(our, ctx["flags"]),
         "progress": None, "won": False, "dead": False,
     }
-    if rec and rec.get("status") == "FINISHED" and rec.get("winner") in ("HOME_TEAM", "AWAY_TEAM"):
-        win_name = rec["home"] if rec["winner"] == "HOME_TEAM" else rec["away"]
+    side = winner_side(rec)
+    if side:
+        win_name = rec["home"] if side == "HOME_TEAM" else rec["away"]
         won = build.canon(our) == build.canon(our_name(win_name, ctx["rev"]))
         slot["won"], slot["dead"] = won, not won
     elif ev:
@@ -295,8 +321,9 @@ def resolve(key, spec, ctx, winners):
         score = f'{rec["hg"]}–{rec["ag"]}' if a_is_home else f'{rec["ag"]}–{rec["hg"]}'
 
     wname = None
-    if rec and rec.get("winner") in ("HOME_TEAM", "AWAY_TEAM"):
-        wn = rec["home"] if rec["winner"] == "HOME_TEAM" else rec["away"]
+    side = winner_side(rec)
+    if side:
+        wn = rec["home"] if side == "HOME_TEAM" else rec["away"]
         wname = our_name(wn, ctx["rev"])
 
     m = {"id": key, "no": spec["no"], "round": rnd, "side": spec["side"],
