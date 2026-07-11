@@ -1,22 +1,5 @@
 {
   "previous": {
-    "date": "2026-07-09",
-    "order": [
-      "Shah Qureshi",
-      "Darren Cooney",
-      "Simon Champion-MacPherson",
-      "Sean Blakeley",
-      "Adam Hollister",
-      "Ryan Golds",
-      "Chris McConney",
-      "Carmine Colicino",
-      "Dimitra Chaloglou",
-      "Georgia Cottle",
-      "John Jeeves",
-      "Tom Reed"
-    ]
-  },
-  "current": {
     "date": "2026-07-10",
     "order": [
       "Shah Qureshi",
@@ -26,6 +9,23 @@
       "Adam Hollister",
       "Chris McConney",
       "Carmine Colicino",
+      "Dimitra Chaloglou",
+      "Georgia Cottle",
+      "John Jeeves",
+      "Ryan Golds",
+      "Tom Reed"
+    ]
+  },
+  "current": {
+    "date": "2026-07-11",
+    "order": [
+      "Shah Qureshi",
+      "Darren Cooney",
+      "Simon Champion-MacPherson",
+      "Sean Blakeley",
+      "Adam Hollister",
+      "Carmine Colicino",
+      "Chris McConney",
       "Dimitra Chaloglou",
       "Georgia Cottle",
       "John Jeeves",
