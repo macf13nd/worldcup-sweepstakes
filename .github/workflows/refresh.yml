@@ -1,16 +1,21 @@
 name: Refresh dashboard
 
+# RETIRED 16 Aug 2026. The tournament ended on 19 July and docs/ is now a frozen
+# archive of the final result, so the daily crons are removed: left running they
+# overwrote the archive with an all-zero page (bookmakers drop the outright
+# market once a tournament ends, so every team reads as eliminated) and spent API
+# quota for nothing.
+#
+# The build itself still works and is kept for reuse (Euro 2028). To bring it
+# back: restore the two schedule entries below, point draw.json/aliases.json/
+# flags.json/bracket.json at the new tournament, and update the football-data
+# competition code in build.py.
+#
+#   schedule:
+#     - cron: "23 6 * * *"     # primary, ~07:23 BST, after overnight fixtures
+#     - cron: "23 11 * * *"    # fallback, self-skips if the primary already ran
 on:
-  schedule:
-    # Primary — 06:23 UTC (~07:23 BST). Off the top-of-hour to dodge GitHub's
-    # congested scheduler queue. Runs after overnight US fixtures wrap.
-    - cron: "23 6 * * *"
-    # Fallback — 11:23 UTC (~12:23 BST). Only acts if the primary run didn't
-    # update today's snapshot (see the guard step); otherwise it self-skips, so
-    # it never triggers an extra same-day rebuild and the movement baseline is
-    # untouched.
-    - cron: "23 11 * * *"
-  workflow_dispatch: {}    # manual "refresh now" button
+  workflow_dispatch: {}    # manual only — nothing runs on a schedule any more
 
 permissions:
   contents: write          # commit the regenerated page back to main
